@@ -34,7 +34,7 @@ function formatLogDate(date = new Date()) {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
   }).formatToParts(date);
 
-  // 年・月・日などの部品を、values.yearのように取り出せるオブジェクトに変換する。
+  // 年・月・日などの要素を、values.yearのように取り出せるオブジェクトに変換する。
   const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
   const day = `${values.year}/${values.month}/${values.day}`;
   const time = `${values.hour}:${values.minute}:${values.second}`;

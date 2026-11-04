@@ -10,14 +10,14 @@ import path from 'node:path';
 import { createReleaseId, createDeploymentVersion, readDeployInitials, readDeployTarget } from '../scripts/deploy-prod.js';
 import { savedReleases, findRelease } from '../scripts/rollback-prod.js';
 
-test('リリース名の先頭は版番号の年を除いた部分で、同じ秒でも重複しない', () => {
+test('リリース名の先頭は年を含む版番号で、同じ秒でも重複しない', () => {
   const now = new Date('2026-09-28T13:51:20Z');
   const first = createReleaseId('260928-001-yt', now);
   const second = createReleaseId('260928-001-yt', now);
-  assert.match(first, /^0928-001-yt-225120-[0-9a-f-]{36}$/);
+  assert.match(first, /^260928-001-yt-225120-[0-9a-f-]{36}$/);
   assert.notEqual(first, second);
-  assert.match(createReleaseId('270101-001-ab', new Date('2026-12-31T15:00:00Z')), /^0101-001-ab-000000-/);
-  assert.match(createReleaseId('270101-001-AdminUser3', new Date('2026-12-31T15:00:00Z')), /^0101-001-AdminUser3-000000-/);
+  assert.match(createReleaseId('270101-001-ab', new Date('2026-12-31T15:00:00Z')), /^270101-001-ab-000000-/);
+  assert.match(createReleaseId('270101-001-AdminUser3', new Date('2026-12-31T15:00:00Z')), /^270101-001-AdminUser3-000000-/);
   assert.throws(() => createReleaseId('bad', now), /版番号/);
 });
 
@@ -45,6 +45,7 @@ test('新旧のフォルダ名を版番号順に一覧表示し、どちらも�
   const releases = [
     { id: '20260929-120000-11111111-1111-4111-8111-111111111111', version: '260929-001-yt' },
     { id: '0930-001-yt-155038-22222222-2222-4222-8222-222222222222', version: '260930-001-yt' },
+    { id: '270101-001-DeveloperOne-000000-33333333-3333-4333-8333-333333333333', version: '270101-001-DeveloperOne' },
   ];
   for (const release of releases) {
     const directory = path.join(root, 'releases', release.id);

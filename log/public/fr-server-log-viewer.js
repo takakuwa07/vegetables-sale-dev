@@ -1,3 +1,5 @@
+// 業務ログを初回はHTTP取得し、その後はSSEで更新を受け取って表示する。
+// 表示用の色付けと旧形式の変換はブラウザ内だけで行い、元のログは書き換えない。
 // -----------------------------------------------------------
 // ✅ 要素を変数化
 // -----------------------------------------------------------
@@ -215,10 +217,7 @@ function renderLog(data) {
   // HTML文字を無害化し、エラーの強調表示は継続する。
   logOutputEl.innerHTML = createHighlightedLogHtml(displayLines);
   logOutputEl.scrollTop = followLatest ? logOutputEl.scrollHeight : previousScrollTop;
-  // 狭い画面でページ全体にもスクロールがある場合、初回はログ枠の下端も画面内へ入れる。
-  if (!hasRenderedLog) {
-    logOutputEl.scrollIntoView({ block: 'end', behavior: 'instant' });
-  }
+  // ページ全体は固定し、最下部への移動もログ本文のscrollTopだけで行う。
   logOutputEl.style.visibility = 'visible';
   hasRenderedLog = true;
 }

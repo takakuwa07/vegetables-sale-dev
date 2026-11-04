@@ -17,7 +17,7 @@ test('公開ポートは環境別envから読み、欠落・不正値・重複�
 
   fs.writeFileSync(file, 'APP_PORT=3432\nLOG_PORT=3532\nLIVE_RELOAD_PORT=35732\n');
   assert.deepEqual(readPorts(root, 'development'), {
-    APP_PORT: 3432, LIVE_RELOAD_PORT: 35732
+    APP_PORT: 3432, LOG_PORT: 3532, LIVE_RELOAD_PORT: 35732
   });
 
   fs.writeFileSync(file, 'APP_PORT=3432\nLOG_PORT=3532\n');
@@ -26,7 +26,12 @@ test('公開ポートは環境別envから読み、欠落・不正値・重複�
   fs.writeFileSync(file, 'APP_PORT=abc\nLOG_PORT=3532\nLIVE_RELOAD_PORT=35732\n');
   assert.throws(() => readPorts(root, 'development'), /APP_PORT/);
 
-  fs.writeFileSync(file, 'APP_PORT=3432\nLIVE_RELOAD_PORT=3432\n');
+  fs.writeFileSync(file, 'APP_PORT=3432\nLOG_PORT=3532\nLIVE_RELOAD_PORT=3432\n');
+  assert.throws(() => readPorts(root, 'development'), /重複/);
+
+  fs.writeFileSync(file, 'APP_PORT=3432\nLIVE_RELOAD_PORT=35732\n');
+  assert.throws(() => readPorts(root, 'development'), /LOG_PORT/);
+  fs.writeFileSync(file, 'APP_PORT=3432\nLOG_PORT=3432\nLIVE_RELOAD_PORT=35732\n');
   assert.throws(() => readPorts(root, 'development'), /重複/);
 });
 
@@ -46,7 +51,7 @@ test('デプロイ前に開発と本番のポート重複を拒否する', t => 
   const production = path.join(root, 'production');
   fs.mkdirSync(development);
   fs.mkdirSync(production);
-  fs.writeFileSync(path.join(development, '.env.development'), 'APP_PORT=3100\nLOG_PORT=33100\nLIVE_RELOAD_PORT=33100\n');
+  fs.writeFileSync(path.join(development, '.env.development'), 'APP_PORT=3100\nLOG_PORT=3106\nLIVE_RELOAD_PORT=33100\n');
   fs.writeFileSync(path.join(production, '.env.production'), 'APP_PORT=3100\nLOG_PORT=2106\n');
   assert.throws(() => ensureEnvironmentPortsDistinct(development, production), /3100（開発 APP_PORT \/ 本番 APP_PORT）/);
 
@@ -58,6 +63,8 @@ test('デプロイ前に開発と本番のポート重複を拒否する', t => 
 
   fs.writeFileSync(path.join(production, '.env.production'), 'APP_PORT=2100\nLOG_PORT=2106\n');
   assert.deepEqual(ensureEnvironmentPortsDistinct(development, production), { APP_PORT: 2100, LOG_PORT: 2106 });
+  fs.writeFileSync(path.join(production, '.env.production'), 'APP_PORT=2100\nLOG_PORT=3106\n');
+  assert.throws(() => ensureEnvironmentPortsDistinct(development, production), /3106（開発 LOG_PORT \/ 本番 LOG_PORT）/);
   fs.writeFileSync(path.join(production, '.env.production'), 'APP_PORT=33100\nLOG_PORT=2106\n');
   assert.throws(() => ensureEnvironmentPortsDistinct(development, production), /33100（開発 LIVE_RELOAD_PORT \/ 本番 APP_PORT）/);
 });

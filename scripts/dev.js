@@ -2,13 +2,13 @@
 // nodemonで業務サーバーを起動し、コード変更時に再起動できるようにする。
 // サーバーの出力を端末へ表示しながら、業務ログのファイルにも保存する。
 
-import { spawn } from 'node:child_process';
+import { fork, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { StringDecoder } from 'node:string_decoder';
 import { stripVTControlCharacters } from 'node:util';
 import { appendLog as writeLog, formatLogMessage } from '../middleware/logger.js';
 
-// 開発ログ画面は業務サーバー内に登録し、ポートの追加を避ける。
+// アプリの出力だけを業務ログへ保存する。ログ閲覧サーバー自身の出力は保存しない。
 const logFile = 'log/server-app.log';
 const appendLog = text => {
   writeLog(text, logFile);
@@ -32,11 +32,59 @@ const child = spawn(process.execPath, [nodemonPath, ...nodemonArgs], {
   stdio: ['pipe', 'pipe', 'pipe']
 });
 
+// 📝 ログ画面を別プロセスで起動する。アプリが再起動・起動失敗してもログを読める。
+// IPC接続を持たせ、親が終了した場合もログサーバーだけを残さない。
+const logServer = fork(fileURLToPath(new URL('../log/server-log.js', import.meta.url)), [], {
+  cwd: new URL('../', import.meta.url),
+  windowsHide: true,
+  stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
+});
+let stopping = false;
+
+// 🛑 開発コマンド全体を止めるときは、両サーバーへ終了要求を送る。
+function stopDevelopment(signal = 'SIGTERM') {
+  if (stopping) {
+    return;
+  }
+  stopping = true;
+
+  // Windowsのkillはnodemon自身だけを止めるため、所有する子サーバーもまとめて終了する。
+  if (child.pid && child.exitCode === null && child.signalCode === null) {
+    if (process.platform === 'win32') {
+      const stop = spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+        windowsHide: true, stdio: 'ignore',
+      });
+      stop.on('error', () => child.kill(signal));
+    } else {
+      child.kill(signal);
+    }
+  }
+  if (logServer.connected) {
+    logServer.send('production:stop', () => {});
+  }
+}
+
+// ログ専用ポートの競合などを見逃して、アプリだけが動き続ける状態を防ぐ。
+logServer.on('error', error => {
+  console.error('開発ログサーバーの起動に失敗しました:', error.message);
+  process.exitCode = 1;
+  stopDevelopment();
+});
+logServer.on('exit', code => {
+  if (!stopping) {
+    console.error('開発ログサーバーが終了しました。開発コマンドを停止します');
+    process.exitCode = code || 1;
+    stopDevelopment();
+  }
+});
+
 // チャンクの途中で日本語や改行が分断されても、1行ずつ正しく復元する。
+// 子サーバーの出力を行単位に復元し、ターミナルとserver-app.logへ振り分ける。
 function capture(stream, destination) {
   const decoder = new StringDecoder('utf8');
   let pending = '';
 
+  // 独自形式のログには保存用の本文を使い、nodemonなどの通常出力はそのまま記録する。
   function write(line) {
     // 業務サーバーから渡されたconsole出力は、表示用と保存用を分けて扱う。
     if (line.startsWith('\x1eAPP_LOG ')) {
@@ -85,17 +133,19 @@ child.on('error', error => {
   process.stdin.unpipe(child.stdin);
   process.stdin.pause();
   process.exitCode = 1;
+  stopDevelopment();
 });
 child.on('close', code => {
   process.stdin.unpipe(child.stdin);
   process.stdin.pause();
-  process.exitCode = code ?? 1;
+  process.exitCode = process.exitCode || code || 0;
+  stopDevelopment();
 });
 
-// Ctrl+Cや終了要求を、ログ画面も配信している業務サーバーへ渡す。
+// ⌨️ Ctrl+Cや終了要求は、業務サーバーとログサーバーの両方へ渡す。
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => {
-    child.kill(signal);
+    stopDevelopment(signal);
   });
 }
 

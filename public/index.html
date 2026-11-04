@@ -4,22 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#234f3e">
-  <title>野菜売上データ | Vegetable Sales</title>
+  <title>{{applicationTitle}}</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/shared/ress.min.css">
   <link rel="stylesheet" href="style.css">
-  <script src="fr-vegetable-sales.js" defer></script>
+  <script id="application-settings" type="application/json">{{applicationSettings}}</script>
+  <script src="records.js" defer></script>
 </head>
 <body>
-  <!-- 🥬 業務名とデータの取得状態 -->
+  <!-- 🧭 アプリ名と取得状態を小さなヘッダーへまとめる -->
   <header class="app-header">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">V<span>↗</span></span>
+      <span class="brand-mark" aria-hidden="true">{{applicationInitial}}<span>↗</span></span>
       <div>
-        <p class="eyebrow">VEGETABLE SALES</p>
-        <h1>野菜売上データ</h1>
+        <p class="eyebrow">{{applicationLabel}}</p>
+        <h1>{{applicationTitle}} Ver{{applicationVersion}}</h1>
       </div>
     </div>
+    <!-- development-badge -->
     <div class="header-status">
       <span id="connection-status" class="status-pill">接続準備中</span>
       <p>最終取得 <time id="last-fetched">―</time></p>
@@ -27,20 +29,8 @@
   </header>
 
   <main class="workspace">
-    <!-- 📋 元テーブルを列名・値のまま一覧する -->
-    <section class="intro" aria-labelledby="list-title">
-      <div>
-        <p class="section-label">SALES RECORDS</p>
-        <h2 id="list-title">売上レコード一覧</h2>
-        <p class="description">登録されている売上データを、そのまま確認できます。</p>
-      </div>
-      <div class="record-summary">
-        <div><span id="total-count">―</span><small>レコード</small></div>
-        <p><span id="column-count">―</span> 列 · 閲覧専用</p>
-      </div>
-    </section>
-
-    <section class="data-panel" aria-label="売上データ">
+    <!-- 📋 見出し用の段を作らず、表の表示領域を広く確保する -->
+    <section class="data-panel" aria-label="データ一覧">
       <div class="toolbar">
         <form id="search-form" role="search">
           <label for="search-input" class="sr-only">テーブル内を検索</label>
@@ -62,14 +52,19 @@
       </div>
 
       <div class="table-caption">
-        <span><span class="table-dot" aria-hidden="true"></span> t_vegetable_sales</span>
+        <span><span class="table-dot" aria-hidden="true"></span> {{tableName}}</span>
         <span id="result-context">全列を表示</span>
+        <!-- 📊 件数・列数は表の情報行の余白へまとめる -->
+        <div class="record-summary" aria-label="レコード件数と列数">
+          <span><strong id="total-count">―</strong> レコード</span>
+          <span><span id="column-count">―</span> 列 · 閲覧専用</span>
+        </div>
       </div>
       <div id="message" class="message" role="status" aria-live="polite">データを読み込んでいます…</div>
       <p id="order-warning" class="order-warning" hidden>主キーがないため、同じ値の行の順番は一定にならない場合があります。</p>
-      <div id="table-region" class="table-region" tabindex="0" role="region" aria-label="売上データ表。縦横にスクロールできます" aria-busy="true">
-        <table id="sales-table">
-          <caption class="sr-only">野菜売上テーブルの全列と値</caption>
+      <div id="table-region" class="table-region" tabindex="0" role="region" aria-label="データ表。縦横にスクロールできます" aria-busy="true">
+        <table id="records-table">
+          <caption class="sr-only">参照先テーブルの全列と値</caption>
           <thead id="table-head"></thead>
           <tbody id="table-body"></tbody>
         </table>
@@ -92,8 +87,8 @@
     </section>
   </main>
   <footer class="app-footer">
-    <span>vegetables_maintenance_db <span aria-hidden="true">/</span> dbo.t_vegetable_sales</span>
-    <span id="app-version">Vegetable Sales</span>
+    <span><span id="database-name">接続先を確認中</span> <span aria-hidden="true">/</span> {{qualifiedTable}}</span>
+    <span id="app-version">{{applicationLabel}}</span>
   </footer>
 </body>
 </html>

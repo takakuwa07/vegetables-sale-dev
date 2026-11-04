@@ -7,6 +7,7 @@ import path from 'node:path';
 import { gatewayCommand, atomicJson } from './production-gateway.js';
 import { readDeployTarget } from './deploy-prod.js';
 
+// 保存済みフォルダのruntime.jsonを調べ、有効な本番リリースだけを版番号順に返す。
 function savedReleases(root) {
   const directory = path.join(root, 'releases');
   if (!fs.existsSync(directory)) return [];
@@ -26,6 +27,7 @@ function savedReleases(root) {
     .sort((a, b) => a.version.localeCompare(b.version) || a.id.localeCompare(b.id));
 }
 
+// 版番号またはフォルダ名で切り戻し先を1つに決める。候補が複数なら勝手に選ばない。
 function findRelease(root, name) {
   const matches = savedReleases(root).filter(release => release.id === name || release.version === name);
   if (matches.length !== 1) {
@@ -34,9 +36,12 @@ function findRelease(root, name) {
   return matches[0];
 }
 
+// 保存済みリリースを再起動して確認し、成功した場合だけ公開先とブラウザ通知を切り替える。
+// npm ciは実行しないため、切り戻し先のコードとnode_modulesの両方が必要。
 async function rollbackProduction(root, name) {
   const lockPath = path.join(root, '.deploy.lock');
   let lock;
+  // デプロイと同じ排他ロックを使い、配布と切り戻しが同時に公開状態を書き換えるのを防ぐ。
   try { lock = fs.openSync(lockPath, 'wx'); }
   catch { throw new Error('デプロイロックがあります。別のデプロイや切り戻しが実行中でないか確認してください'); }
   try {
@@ -61,6 +66,7 @@ async function rollbackProduction(root, name) {
         : 'このリリースの画面更新は、通知をクリックしたときに実行されます');
       return release;
     } catch (error) {
+      // 切り替え前に失敗した候補だけを破棄し、現在公開中の版は動かしたままにする。
       if (!published) await gatewayCommand(root, 'discard').catch(() => {});
       throw error;
     }
@@ -70,6 +76,7 @@ async function rollbackProduction(root, name) {
   }
 }
 
+// releasesは一覧表示だけ、rollback -- <版>は選択した保存版への切り替えを実行する。
 if (import.meta.main) {
   try {
     const args = process.argv.slice(2);

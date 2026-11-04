@@ -1,0 +1,14 @@
+{
+  "id": "vegetables-sale",
+  "title": "データ閲覧アプリ",
+  "label": "DATA VIEWER",
+  "version": "1.5",
+  "description": "登録されているデータを一覧で確認できます。",
+  "configurationDatabase": "application_config_db",
+  "data": {
+    "database": "vegetables_maintenance_db",
+    "schema": "dbo",
+    "table": "t_vegetable_sales",
+    "apiPath": "/api/records"
+  }
+}

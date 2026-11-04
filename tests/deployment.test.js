@@ -31,6 +31,7 @@ test('本番HTMLに更新検知を追加し、キャッシュと更新公開を�
   assert.equal((await fetch(base + '/deployment-update.js')).headers.get('cache-control'), 'no-cache');
 });
 
+// DOM・API・時計を置き換え、実際のブラウザを再読み込みせずに通知と10秒の期限を再現する。
 function browser() {
   const events = new Map();
   const notices = [];
@@ -82,11 +83,11 @@ test('新版は通知だけ表示し、入力・同期処理・サーバー停�
   assert.equal(offline.reloads(), 0);
 });
 
-test('通常モードは上部バナー全体をクリックして更新する', async () => {
+test('通常モードは右上の更新通知をクリックして更新する', async () => {
   const page = browser();
   await delay(0); page.update(); await page.tick();
-  assert.match(page.notices[0].style.cssText, /top:0/);
-  assert.match(page.notices[0].style.cssText, /width:100%/);
+  assert.match(page.notices[0].style.cssText, /top:12px;right:12px/);
+  assert.match(page.notices[0].style.cssText, /width:360px;max-width:calc\(100% - 24px\)/);
   page.notices[0].click();
   assert.equal(page.reloads(), 1);
 });
@@ -120,7 +121,7 @@ test('強制モードは10秒をカウントダウンし、処理中でも自動
   assert.equal(page.reloads(), 1);
 });
 
-test('強制モードはバナーをクリックすると10秒を待たず更新する', async () => {
+test('強制モードは通知をクリックすると10秒を待たず更新する', async () => {
   const page = browser();
   await delay(0); page.update('force'); await page.tick();
   page.notices[0].click();

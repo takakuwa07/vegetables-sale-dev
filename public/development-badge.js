@@ -16,6 +16,7 @@ if (badge) {
       badge.style.pointerEvents = 'none';
     }, 800);
 
+    // 業務画面と取り違えないよう、非表示のままにせず5秒後には必ず目印を戻す。
     setTimeout(() => {
       badge.textContent = originalText;
       badge.style.opacity = '1';

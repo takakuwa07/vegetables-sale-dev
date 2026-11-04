@@ -15,7 +15,7 @@ test('必須の.env設定が空なら、項目名を示して起動を止める'
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const source = path.resolve(import.meta.dirname, '..');
   fs.mkdirSync(path.join(root, 'config'));
-  for (const file of ['env.js', 'project-root.js', 'ports.js']) {
+  for (const file of ['env.js', 'project-root.js', 'ports.js', 'database-name.js', 'application.js', 'application.json']) {
     fs.copyFileSync(path.join(source, 'config', file), path.join(root, 'config', file));
   }
   fs.writeFileSync(path.join(root, 'runtime.json'), '{"environment":"development"}');

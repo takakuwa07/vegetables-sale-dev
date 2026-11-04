@@ -5,7 +5,7 @@
 import express from 'express';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { getServerAddress, getDisplayHost } from '../config/server-address.js';
+import { getServerAddress } from '../config/server-address.js';
 // with { type: 'json' }で、JSONファイルを設定オブジェクトとして読み込む。
 import runtime from '../runtime.json' with { type: 'json' };
 import { setupLogger } from '../middleware/logger.js';
@@ -18,8 +18,8 @@ import { addDevelopmentBadge } from '../middleware/development-badge.js';
 // -----------------------------------------------------------
 // 業務サーバーとは別プロセスなので、業務側の停止に巻き込まれない。
 // 業務側だけがserver-app.logへ記録する。閲覧サーバー自身は端末表示のみ。
-// 開発ではlogフォルダでnpm run devを実行してnodemonを使う。ブラウザのLiveReloadは使わない。
-// 本番ではnode server-log.jsで起動する。
+// 開発ではルートのnpm run dev、本番では公開管理プロセスが起動する。
+// ログ画面はSSEで更新するため、ブラウザのLiveReloadは使わない。
 setupLogger({ saveToFile: false, plainConsole: true });
 
 try {
@@ -93,9 +93,9 @@ try {
   // 0.0.0.0は、この端末のすべてのIPv4インターフェースで接続を受け付ける指定。
   const server = app.listen(port, runtime.environment === 'production' ? '127.0.0.1' : '0.0.0.0', () => {
     process.send?.({ type: 'production:ready', port: server.address().port });
-    // 業務サーバーと同じ優先順位でIPv4を選び、案内用のホスト名に変換する。
-    const address = getServerAddress();
-    const displayHost = getDisplayHost(address, address);
+    // 業務サーバーと同じ優先順位で、起動PCのIPv4を案内する。
+    // URLの表示だけを変え、実際の待受アドレスや公開ポートは上の設定を使う。
+    const displayHost = getServerAddress();
 
     console.log('ログ閲覧サーバーを起動しました: ' + runtime.environment);
 

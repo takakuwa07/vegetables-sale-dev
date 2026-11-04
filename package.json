@@ -1,7 +1,7 @@
 {
-  "name": "vegetables-sale",
+  "name": "data-viewer",
   "version": "1.0.1",
-  "description": "野菜売上テーブルの閲覧と安全な公開版切り替え",
+  "description": "データ一覧の閲覧と本番リリースの切り替え",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,7 +12,9 @@
     "depfo": "node scripts/deploy-prod.js --force",
     "releases": "node scripts/rollback-prod.js --list",
     "rollback": "node scripts/rollback-prod.js",
-    "prod:setup": "node scripts/setup-production.js"
+    "prod:setup": "node scripts/setup-production.js",
+    "db:setup": "node scripts/setup-database.js",
+    "db:generate": "node scripts/generate-database-setup.js"
   },
   "keywords": [],
   "author": "",
@@ -27,8 +29,13 @@
     "livereload": "^0.10.3",
     "nodemon": "^3.1.14"
   },
+  "overrides": {
+    "nodemon": {
+      "minimatch": "11.0.1"
+    }
+  },
   "engines": {
-    "node": ">=24"
+    "node": ">=22.23.0"
   },
   "private": true
 }

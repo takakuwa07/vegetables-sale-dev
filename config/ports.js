@@ -16,7 +16,7 @@ export function readPorts(root, environment) {
     .map(line => line.trim().split(/=(.*)/s).slice(0, 2).map(value => value.trim())));
   // LiveReloadは開発専用。本番には業務とログの公開ポートだけ必要。
   const names = environment === 'development'
-    ? ['APP_PORT', 'LIVE_RELOAD_PORT']
+    ? ['APP_PORT', 'LOG_PORT', 'LIVE_RELOAD_PORT']
     : ['APP_PORT', 'LOG_PORT'];
   const ports = {};
 

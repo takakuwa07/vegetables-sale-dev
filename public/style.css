@@ -1,4 +1,4 @@
-/* 🥬 緑と生成りを基調に、表の読みやすさを優先する。 */
+/* 📋 緑と生成りを基調に、上下の余白を抑えて表の表示行数を確保する。 */
 :root {
   color-scheme: light;
   font-family: "Yu Gothic UI", "Meiryo", sans-serif;
@@ -47,7 +47,7 @@ button:not(:disabled):hover {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 18px 34px;
+  padding: 8px 22px;
   background: #fff;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
@@ -55,18 +55,19 @@ button:not(:disabled):hover {
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
 .brand-mark {
   position: relative;
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 14px 14px 14px 3px;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px 10px 10px 3px;
   background: var(--green);
   color: #ecf1d8;
-  font: 700 30px Georgia, serif;
+  font: 700 25px Georgia, serif;
 }
 .brand-mark span {
   position: absolute;
@@ -75,7 +76,7 @@ button:not(:disabled):hover {
   color: #b7d08d;
   font-size: 21px;
 }
-.eyebrow, .section-label {
+.eyebrow {
   color: #788471;
   font-size: 10px;
   font-weight: 700;
@@ -83,7 +84,7 @@ button:not(:disabled):hover {
 }
 h1 {
   margin-top: 3px;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: .05em;
 }
@@ -91,8 +92,13 @@ h1 {
   text-align: right;
   flex-shrink: 0;
 }
+/* 🛠️ 開発の目印もヘッダー内に収め、タイトルや表へ重ねない。 */
+.app-header #development-environment-badge {
+  position: static !important;
+  flex-shrink: 0;
+}
 .header-status p {
-  margin-top: 6px;
+  margin-top: 3px;
   color: var(--muted);
   font-size: 11px;
 }
@@ -113,47 +119,23 @@ h1 {
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  padding: 25px 34px 0;
-  gap: 22px;
+  padding: 8px 22px 0;
 }
-.intro {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 16px;
-}
-h2 {
-  margin-top: 6px;
-  font-size: 25px;
-  letter-spacing: .03em;
-}
-.description {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 12px;
-}
+/* 📊 集計は独立したカードにせず、表の情報行へ横並びで収める。 */
 .record-summary {
-  text-align: right;
-  padding-left: 25px;
-  border-left: 1px solid #cdd7c8;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-left: auto;
+  white-space: nowrap;
   flex-shrink: 0;
 }
 #total-count {
-  font-size: 33px;
+  color: var(--green);
+  font-size: 16px;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   letter-spacing: -.04em;
-}
-.record-summary small {
-  margin-left: 8px;
-  font-size: 11px;
-  color: var(--muted);
-}
-.record-summary p {
-  margin-top: 2px;
-  font-size: 11px;
-  color: var(--muted);
 }
 .data-panel {
   display: flex;
@@ -173,7 +155,7 @@ h2 {
   flex-shrink: 0;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 16px 20px;
+  padding: 8px 14px;
 }
 #search-form {
   display: flex;
@@ -193,8 +175,8 @@ h2 {
 #search-input {
   width: 100%;
   min-width: 0;
-  height: 38px;
-  padding: 8px 10px;
+  height: 34px;
+  padding: 6px 10px;
   outline-offset: -3px;
   color: #263d34;
 }
@@ -218,7 +200,7 @@ h2 {
   color: var(--muted);
 }
 select {
-  height: 38px;
+  height: 34px;
   padding: 6px 8px;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -226,7 +208,7 @@ select {
   background: white;
 }
 .primary-button {
-  padding: 9px 15px;
+  padding: 7px 12px;
   border-radius: 6px;
   color: #fff;
   background: var(--green);
@@ -240,10 +222,11 @@ select {
 }
 .table-caption {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   flex-shrink: 0;
-  padding: 10px 20px;
+  padding: 5px 14px;
   border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 11px;
@@ -251,6 +234,13 @@ select {
 .table-caption > span:first-child {
   color: #4b6452;
   font-family: Consolas, monospace;
+}
+#result-context {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .table-dot {
   display: inline-block;
@@ -261,11 +251,12 @@ select {
   background: #83a16d;
 }
 .message, .order-warning {
-  padding: 10px 20px;
+  padding: 6px 14px;
   flex-shrink: 0;
   color: #5e6d55;
   background: #f3f6ed;
   font-size: 12px;
+  line-height: 1.5;
 }
 .message.is-error {
   background: #fff1e9;
@@ -301,7 +292,7 @@ th {
   color: #4e634c;
 }
 th, td {
-  padding: 13px 20px;
+  padding: 6px 12px;
 }
 th button {
   display: flex;
@@ -316,10 +307,9 @@ th button span {
 }
 td {
   border-bottom: 1px solid #edf0e9;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  /* 📏 値の自動折返しで行が高くならないようにし、長い値は横スクロールで読む。 */
+  white-space: pre;
   min-width: 110px;
-  max-width: 440px;
 }
 tr:nth-child(even) td {
   background: #fafbf8;
@@ -358,7 +348,7 @@ tr:hover td {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  padding: 12px 20px;
+  padding: 6px 14px;
   border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 11px;
@@ -369,8 +359,8 @@ tr:hover td {
   gap: 5px;
 }
 .pagination button {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--line);
   border-radius: 5px;
   background: #fff;
@@ -386,7 +376,7 @@ tr:hover td {
   flex-shrink: 0;
   justify-content: space-between;
   gap: 10px;
-  padding: 13px 34px;
+  padding: 5px 22px;
   font-size: 10px;
   color: #82907c;
 }
@@ -409,7 +399,9 @@ tr:hover td {
 /* 📱 小さい画面では余白を縮め、表の内部だけをスクロールさせる。 */
 @media (max-width: 720px) {
   .app-header {
-    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 7px 12px;
     gap: 8px;
   }
   h1 {
@@ -417,6 +409,14 @@ tr:hover td {
   }
   .brand {
     gap: 9px;
+    flex: 1;
+    min-width: 0;
+  }
+  .app-header #development-environment-badge {
+    order: 1;
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-left: auto;
   }
   .brand-mark {
     width: 36px;
@@ -431,24 +431,11 @@ tr:hover td {
     font-size: 10px;
   }
   .workspace {
-    padding: 16px 12px 0;
-    gap: 15px;
-  }
-  h2 {
-    font-size: 20px;
-  }
-  .description {
-    font-size: 11px;
-  }
-  .record-summary {
-    padding-left: 12px;
-  }
-  #total-count {
-    font-size: 25px;
+    padding: 6px 10px 0;
   }
   .toolbar {
-    padding: 12px;
-    gap: 10px;
+    padding: 7px 10px;
+    gap: 7px;
   }
   #search-form {
     max-width: none;
@@ -459,17 +446,25 @@ tr:hover td {
     width: 100%;
   }
   .pagination {
-    padding: 10px;
+    padding: 5px 10px;
+  }
+  .table-caption {
+    gap: 4px 10px;
+    padding: 4px 10px;
+  }
+  #result-context {
+    flex-basis: 100%;
+    order: 1;
   }
   .app-footer {
-    padding: 10px 14px;
+    padding: 4px 12px;
   }
   th, td {
-    padding: 12px;
+    padding: 5px 10px;
   }
 }
 @media (max-height: 600px) {
-  .intro, .description, .app-footer, .eyebrow {
+  .app-footer, .eyebrow {
     display: none;
   }
   .app-header {
@@ -477,8 +472,8 @@ tr:hover td {
     padding-bottom: 6px;
   }
   .workspace {
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
   .toolbar {
     padding-top: 7px;

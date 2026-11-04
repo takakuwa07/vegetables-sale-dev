@@ -1,5 +1,5 @@
 // ── 🔍 コードと参照先の確認 ───────────────────────────────
-// JavaScriptの構文、ローカルimport、ルート設定のfileを確認する。
+// JavaScriptの構文、ローカルimport、SQLファイル、ルート設定のfileを確認する。
 // HTMLが参照する画像・CSS・JSなども確認する。
 // 対象のJavaScriptは実行せず、外部サービスへの接続もしない。
 
@@ -76,6 +76,18 @@ function inspectJavaScript(file) {
     checkLocalFile(file, match[1], 'ローカルimportの参照先');
   }
 
+  // SQLファイルも配布に必要な参照先として確認する。ファイルを実行したりDBには接続しない。
+  const sqlFilePattern = /new URL\(\s*['"](\.{1,2}\/[^'"]+\.sql)['"]\s*,\s*import\.meta\.url\s*\)/g;
+
+  for (const match of text.matchAll(sqlFilePattern)) {
+    checkLocalFile(file, match[1], 'SQLファイルの参照先');
+  }
+
+  // SQL文をJSへ書き戻さないよう、query・batchへの文字列の直接指定は禁止する。
+  if (/\.(?:query|batch)\(\s*['"`]/.test(text)) {
+    throw new Error('SQLは.sqlファイルから読み込んで実行してください: ' + file);
+  }
+
   // 先ほどのルート設定にあるfileプロパティも確認する。
   //
   // 対象例：
@@ -123,7 +135,7 @@ function inspectHtml(file) {
     let target;
 
     if (refPath === '/shared/ress.min.css') {
-      // 共通CSSは隣接するcast-managementプロジェクトを編集元にする。
+      // 共通CSSもプロジェクトに同梱したファイルを検査し、隣接フォルダには依存しない。
       target = sharedRessStylesheetPath;
     } else if (refPath.startsWith('/server-log-viewer/')) {
       // ログ画面のファイルはlog/publicを基準にする。
@@ -145,6 +157,22 @@ function inspectHtml(file) {
       throw new Error(
         `HTMLから参照するファイルが見つかりません: ${file} -> ${ref}`
       );
+    }
+  }
+}
+
+// -----------------------------------------------------------
+// 📐 SQLの字下げを確認
+// -----------------------------------------------------------
+function inspectSql(file) {
+  const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+
+  for (const [index, line] of lines.entries()) {
+    const indentation = line.match(/^[ \t]*/)[0];
+
+    // SELECTの文字位置にそろえる場合も、行頭は必ず偶数の半角スペースにする。
+    if (indentation.includes('\t') || indentation.length % 2 !== 0) {
+      throw new Error(`SQLの字下げは半角スペース2文字単位にしてください: ${file}:${index + 1}`);
     }
   }
 }
@@ -175,6 +203,8 @@ function inspect(directory) {
       inspectJavaScript(file);
     } else if (file.endsWith('.html')) {
       inspectHtml(file);
+    } else if (file.endsWith('.sql')) {
+      inspectSql(file);
     }
   }
 }
@@ -186,8 +216,8 @@ try {
   inspect(root);
 
   console.info(
-    `JavaScriptの構文（${count}ファイル）、ローカルimport、` +
-    'ルート設定のfile、HTMLアセットを確認しました。'
+    `JavaScriptの構文（${count}ファイル）、ローカルimport、SQLファイル、` +
+    'SQLの字下げ（半角スペース2文字単位）、ルート設定のfile、HTMLアセットを確認しました。'
   );
 } catch (error) {
   console.error(error.message);

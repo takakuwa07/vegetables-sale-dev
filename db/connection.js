@@ -1,38 +1,47 @@
 // ── 🗄️ 複数データベースへの共通接続 ────────────────────────
-// common_dbを起点に利用DBの一覧を読み、起動時に有効な接続を確認する。
+// 接続設定専用DBを起点に、このアプリ・環境で有効な業務DBの接続を確認する。
 // APIは接続先名で共有プールを取得し、失敗した接続は次回に再試行する。
 
 import sql from 'mssql';
-import env from '../config/env.js';
 
+import env from '../config/env.js';
+import { readSql } from './sql.js';
+import { databaseNameForEnvironment } from '../config/database-name.js';
+
+const connectionsQuery = readSql(new URL('./queries/select_database_connections.sql', import.meta.url));
+
+// 接続済みプールと接続中のPromiseを分け、APIごとの接続作成や同時接続の重複を避ける。
 const pools = new Map();
 const connecting = new Map();
-const configurations = new Map([['common', env.commonDatabase]]);
+const configurations = new Map([['configuration', env.configurationDatabase]]);
 
-// 共通DBの接続先台帳を読み、登録されたDBを全て接続する。
+// 専用DBの台帳から、このアプリ・環境で有効な接続だけを取得して起動時に確認する。
 export async function initializeDatabaseConnections() {
-  const common = await getDatabaseConnection('common');
+  const configuration = await getDatabaseConnection('configuration');
 
-  const result = await common.request().query(`
-    SELECT connection.connection_name, connection.database_name
-    FROM dbo.cfg_database_connection AS connection
-    ORDER BY connection.connection_name
-  `);
-
+  const result = await configuration.request()
+    .input('applicationName', sql.NVarChar(100), env.configurationApplication)
+    .input('environmentName', sql.VarChar(20), env.environment)
+    .query(connectionsQuery);
   const rows = result.recordset;
 
-  const names = new Set(['common']);
+  // 台帳から追加できるのは接続名とDB名だけ。認証・サーバー設定は専用DBとそろえる。
+  const names = new Set(['configuration']);
   for (const row of rows) {
     const name = row.connection_name;
     const database = row.database_name;
     if (typeof name !== 'string' || !/^[a-z][a-z0-9_]*$/.test(name) || names.has(name)) {
       throw new Error('DB接続台帳の接続名が不正または重複しています');
     }
-    if (typeof database !== 'string' || !/^[a-z][a-z0-9_]*$/.test(database)) {
-      throw new Error(`DB接続台帳のデータベース名が不正です: ${name}`);
-    }
+    // 台帳も基底名で管理し、環境ごとの実DB名への変換は設定DBと共通の規則を使う。
+    const resolvedDatabase = databaseNameForEnvironment(database, env.environment);
+
     names.add(name);
-    configurations.set(name, { ...env.commonDatabase, database });
+    configurations.set(name, { ...env.configurationDatabase, database: resolvedDatabase });
+  }
+
+  if (!names.has('application')) {
+    throw new Error(`接続設定DBに${env.configurationApplication} / ${env.environment}の有効なapplication接続がありません。npm run db:setupと台帳の設定を確認してください`);
   }
 
   for (const row of rows) {
@@ -40,6 +49,8 @@ export async function initializeDatabaseConnections() {
   }
 }
 
+// configurationやapplicationなどの接続名に対応するプールを、Promiseとして返す。
+// 接続済みなら再利用し、接続失敗時はキャッシュを外して次回の再接続を可能にする。
 export function getDatabaseConnection(name) {
   const config = configurations.get(name);
   if (!config) throw new Error(`未設定のデータベース接続先です: ${name}`);

@@ -9,6 +9,8 @@ import { parseEnv } from 'node:util';
 import runtime from '../runtime.json' with { type: 'json' };
 import { projectRoot } from './project-root.js';
 import { readPorts } from './ports.js';
+import { databaseNameForEnvironment } from './database-name.js';
+import application from './application.js';
 
 // runtime.jsonが指定する環境に応じて、読み込むenvファイルを決める。
 const isDevelopment = runtime.environment === 'development';
@@ -33,6 +35,7 @@ if (!fs.existsSync(envPath)) {
   throw new Error(`環境設定ファイルがありません: ${envPath}`);
 }
 const fileValues = parseEnv(fs.readFileSync(envPath, 'utf8'));
+// loadEnvFileは既存のOS環境変数を上書きしない。必須値はファイルと有効値の両方を下で検証する。
 loadEnvFile(envPath);
 
 // DBの必須項目は、envファイル内と読み込み後の両方で確認する。
@@ -58,14 +61,18 @@ for (const name of ['DB_ENCRYPT', 'DB_TRUST_SERVER_CERTIFICATE']) {
 }
 // 公開ポートは両サーバーとデプロイ処理で共通の設定を読む。
 const ports = readPorts(projectRoot, runtime.environment);
-const commonDbName = process.env.DB_COMMON_NAME?.trim() || 'common_db';
+// envには基底名を置き、開発環境だけ-devを自動で付けて本番の設定台帳と分離する。
+const configurationDbName = databaseNameForEnvironment(
+  process.env.DB_CONFIG_NAME?.trim() || application.configurationDatabase,
+  runtime.environment
+);
 
-// common_dbへ最初に接続するための設定。追加DB名はcommon_dbの設定表から読む。
-const commonDatabase = {
+// 接続先台帳専用DBへの設定。業務DBの名前は、このDBのアプリ・環境別の台帳から取得する。
+const configurationDatabase = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   server: process.env.DB_SERVER,
-  database: commonDbName,
+  database: configurationDbName,
   port: dbPort,
   options: {
     encrypt: String(process.env.DB_ENCRYPT).toLowerCase() === 'true',
@@ -81,9 +88,10 @@ export default {
   host: internalPort !== undefined ? '127.0.0.1' : '0.0.0.0',
   isDevelopment,
   environment: runtime.environment,
-  // ログ閲覧は別プロセス。LiveReloadは開発時だけ使う。
-  logPort: isDevelopment ? ports.APP_PORT : ports.LOG_PORT,
+  // ログ閲覧は開発・本番とも専用ポート。LiveReloadは開発時だけ使う。
+  logPort: ports.LOG_PORT,
   liveReloadPort: ports.LIVE_RELOAD_PORT,
 
-  commonDatabase
+  configurationApplication: application.id,
+  configurationDatabase
 };

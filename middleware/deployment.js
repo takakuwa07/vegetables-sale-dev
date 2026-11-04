@@ -20,6 +20,7 @@ const browserVersions = runtime.browserVersions || {};
 const browserUpdateModes = runtime.browserUpdateModes || {};
 
 // 公開管理プロセスが切り替え後に書くファイル。各リリースの中には置かない。
+// 起動確認前の候補が利用者へ更新通知を出さないよう、公開完了の印として使う。
 const readyFile = path.join(projectRoot, '.deployment-ready.json');
 
 // このプロセスの版が、現在公開されている版かを確認する。
@@ -35,6 +36,7 @@ function isPublished() {
 }
 
 // 起動確認とブラウザの更新検知に使うAPIを登録する。
+// healthは未公開でも応答し、deployment系は公開完了を確認できるときだけ版番号を返す。
 export function setupHealth(app) {
   // 新版を公開する前の起動確認に使う。公開状態に関係なく応答する。
   app.get('/api/health', (req, res) => {

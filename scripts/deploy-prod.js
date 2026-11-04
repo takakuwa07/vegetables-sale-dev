@@ -30,7 +30,8 @@ function deploy(source, destination, { validateOnly = false, updateMode = 'manua
   if (inside(relative) || inside(reverse)) {
     throw new Error('コピー元とコピー先は同一・親子関係のない別フォルダを指定してください');
   }
-  const entries = ['server.js', 'public', 'backend', 'middleware', 'config', 'db/connection.js',
+  // 実行時のDB共通処理と参照SQLだけを配布する。初期構築用のdatabase-setupは含めない。
+  const entries = ['server.js', 'public', 'backend', 'middleware', 'config', 'db',
     'package.json', 'package-lock.json', 'log/server-log.js', 'log/backend', 'log/public',
     'log/package.json', 'log/package-lock.json'];
   for (const entry of [...entries, 'scripts/check.js', 'scripts/production-gateway.js', 'pm2.production.json']) {
@@ -64,6 +65,7 @@ function deploy(source, destination, { validateOnly = false, updateMode = 'manua
   });
 }
 
+// 同じNode.jsで検査やnpmを実行し、正常終了した場合だけ次のデプロイ手順へ進める。
 function runNode(args, cwd) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, args, { cwd, stdio: 'inherit', windowsHide: true });
@@ -113,7 +115,7 @@ async function ensurePortsFree(ports) {
   }
 }
 
-// 版番号の年を除いた部分を先頭に付け、切り戻し時にフォルダを見分けやすくする。
+// 年を含む版番号を先頭に付け、切り戻し時にフォルダを見分けやすくする。
 // 作成時刻とUUIDを続け、同じ秒に作ってもフォルダ名が重ならないようにする。
 function createReleaseId(version, now = new Date()) {
   if (!/^\d{6}-\d{3}-[A-Za-z0-9]+$/.test(version || '')) throw new Error('リリースの版番号が不正です');
@@ -122,7 +124,7 @@ function createReleaseId(version, now = new Date()) {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
   }).formatToParts(now).filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
   const time = `${parts.hour}${parts.minute}${parts.second}`;
-  return `${version.slice(2)}-${time}-${randomUUID()}`;
+  return `${version}-${time}-${randomUUID()}`;
 }
 
 // 識別子は開発者ごとの設定。未設定を共通の名前で埋めない。
@@ -131,6 +133,7 @@ function isValidDeployIdentifier(value) {
     && /[A-Z]/.test(value) && /[a-z]/.test(value);
 }
 
+// 開発envから公開版番号の末尾に付ける担当者識別子を読み、採番前に形式を検証する。
 function readDeployInitials(source) {
   const envFile = path.join(source, '.env.development');
   if (!fs.existsSync(envFile)) throw new Error('開発環境の.env.developmentがありません');
@@ -203,6 +206,8 @@ function createDeploymentVersion(root, initials, now = new Date()) {
   return `${date}-${String(next).padStart(3, '0')}-${initials}`;
 }
 
+// 検査 → 新版の別フォルダ作成 → 依存導入 → 起動確認 → 公開切り替えを順番に行う。
+// manualとforceで配布手順は共通。違いは、切り替え後にブラウザへ通知する更新方法だけ。
 async function deployProduction(source, destination, updateMode = 'manual') {
   deploy(source, destination, { validateOnly: true });
   const initials = readDeployInitials(source);
@@ -249,6 +254,7 @@ async function deployProduction(source, destination, updateMode = 'manual') {
     console.info('新版のバージョン: ' + version);
     fs.mkdirSync(path.join(destination, 'log'), { recursive: true });
     fs.closeSync(fs.openSync(path.join(destination, 'log/server-app.log'), 'a'));
+    // アプリとログ閲覧の依存はそれぞれのlockファイルで再現し、開発用パッケージは配布しない。
     for (const directory of [releaseDirectory, path.join(releaseDirectory, 'log')]) {
       console.info('新版の依存パッケージをインストールします（現行版は稼働を継続）: ' + directory);
       await runNode([npmCli, 'ci', '--omit=dev'], directory);
@@ -291,6 +297,7 @@ async function deployProduction(source, destination, updateMode = 'manual') {
         : '新版へ切り替えました。画面にはクリック式の更新通知を表示します');
       printRecentAppLogs(destination, releaseId);
     } catch (error) {
+      // 公開前の失敗は候補を破棄する。公開後の保存失敗は、可能なら元の版へ戻す。
       if (!published) {
         await gatewayCommand(destination, 'discard').catch(() => {});
       } else {
@@ -307,6 +314,7 @@ async function deployProduction(source, destination, updateMode = 'manual') {
   }
 }
 
+// npm run dep / depfoの直接実行時だけ配布する。テストなどからimportしただけでは実行しない。
 if (import.meta.main) {
   try {
     const args = process.argv.slice(2);

@@ -1,13 +1,17 @@
-// ── 📋 売上レコードの閲覧 ───────────────────────────────
+// ── 📋 レコードの閲覧 ───────────────────────────────────
 // 全列を安全なテキストとして表示し、検索・並べ替え・ページ移動を行う。
 // 通信失敗時は以前の値を残し、その値が最新ではないことを伝える。
 
 (() => {
+  // 表示名とAPIのURLはサーバーが検証した画面用設定を使う。
+  const application = JSON.parse(document.getElementById('application-settings').textContent);
   const element = id => document.getElementById(id);
+  // 検索・並べ替え・ページ移動で共有する表示条件。loadingは二重取得を防ぐために使う。
   const state = { page: 1, pageSize: 50, search: '', sort: '', direction: 'asc', pages: 1, loading: false };
   const numberFormat = new Intl.NumberFormat('ja-JP');
   let hasData = false;
 
+  // 取得中は一覧の操作を無効化し、取得後は先頭・最終ページに合わせてボタンを戻す。
   function setLoading(loading) {
     state.loading = loading;
     element('table-region').setAttribute('aria-busy', String(loading));
@@ -25,6 +29,7 @@
     }
   }
 
+  // APIの列定義から見出しと行を作り直す。DBの値はtextContentで表示し、HTMLとして実行しない。
   function renderTable(data) {
     const header = document.createElement('tr');
     for (const column of data.columns) {
@@ -91,13 +96,16 @@
     element('connection-status').classList.remove('is-error');
     try {
       const query = new URLSearchParams({ page: state.page, pageSize: state.pageSize, search: state.search, sort: state.sort, direction: state.direction });
-      const response = await fetch('/api/sales?' + query, { cache: 'no-store', signal: AbortSignal.timeout(30000) });
+      const response = await fetch(application.apiPath + '?' + query, { cache: 'no-store', signal: AbortSignal.timeout(30000) });
       const data = await response.json();
       if (!response.ok || !data.ok) {
         throw new Error(data.message || 'データを取得できませんでした。');
       }
+      // サーバーが補正したページ番号や実際の並べ替え列を、次回の操作にも引き継ぐ。
       Object.assign(state, { page: data.page, pages: data.pages, sort: data.sort, direction: data.direction });
       renderTable(data);
+      // 開発の-devも含め、実際に取得に使った接続先を表示する。
+      element('database-name').textContent = data.database;
       element('total-count').textContent = numberFormat.format(data.total);
       element('column-count').textContent = data.columns.length;
       element('last-fetched').textContent = new Date(data.fetchedAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', hour12: false });
@@ -135,6 +143,7 @@
     load();
   });
   element('refresh-button').addEventListener('click', load);
+  // 移動先はクリック時の最新状態から求め、存在するページの範囲内に収める。
   for (const [id, page] of [
     ['first-page', () => 1], ['previous-page', () => state.page - 1],
     ['next-page', () => state.page + 1], ['last-page', () => state.pages],
@@ -144,6 +153,7 @@
       load();
     });
   }
+  // 本番HTMLに埋め込まれた公開版番号を表示する。開発では版番号がないため環境名を表示する。
   const version = document.querySelector('script[data-version]')?.dataset.version;
   element('app-version').textContent = version ? `版 ${version}` : '開発環境';
   load();

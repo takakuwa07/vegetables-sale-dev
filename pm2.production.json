@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "name": "vegetables-sale-prod",
+      "name": "app-production",
       "script": "./scripts/production-gateway.js",
       "args": "manage",
       "exec_mode": "fork",

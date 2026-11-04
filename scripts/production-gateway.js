@@ -14,12 +14,15 @@ import { readPorts } from '../config/ports.js';
 const defaultRoot = path.resolve(import.meta.dirname, '..');
 const stateName = '.production-gateway.json';
 
+// 一時ファイルへ全体を書いてから置き換え、読取側が書きかけのJSONを読むことを防ぐ。
 export function atomicJson(file, data) {
   const temporary = file + '.tmp';
   fs.writeFileSync(temporary, JSON.stringify(data, null, 2) + '\n');
   fs.renameSync(temporary, file);
 }
 
+// デプロイ・切り戻しコマンドから、同じPCの管理APIへ操作を依頼する。
+// 管理ポートと認証トークンは起動時の状態ファイルから読み、毎回接続を閉じる。
 export async function gatewayCommand(root, action, release) {
   const state = JSON.parse(fs.readFileSync(path.join(root, stateName), 'utf8'));
   let response;
@@ -38,10 +41,13 @@ export async function gatewayCommand(root, action, release) {
   return result;
 }
 
+// 管理プロセスの未起動と判断できる失敗だけを選ぶ。認証・操作内容のエラーは隠さない。
 export function managerUnavailable(error) {
   return error.code === 'ENOENT' || error.code === 'ECONNREFUSED' || error.cause?.code === 'ECONNREFUSED';
 }
 
+// ターミナルを閉じても動く管理プロセスを起動し、そのPIDの管理APIが応答するまで待つ。
+// 管理プロセス自身の標準出力とエラーはgateway.logへ追記する。
 export async function launchGateway(root) {
   fs.mkdirSync(path.join(root, 'log'), { recursive: true });
   const output = fs.openSync(path.join(root, 'log/gateway.log'), 'a');
@@ -64,6 +70,7 @@ export async function launchGateway(root) {
   throw new Error('公開サーバーを起動できません。log/gateway.logを確認してください');
 }
 
+// 1区間のHTTP接続だけで有効なヘッダーを除き、転送先へ接続設定を持ち越さない。
 function stripHopHeaders(headers) {
   const result = { ...headers };
   const extra = String(headers.connection || '').toLowerCase().split(',').map(value => value.trim());
@@ -71,7 +78,8 @@ function stripHopHeaders(headers) {
   return result;
 }
 
-// テストでは専用の一時フォルダと公開ポート0を指定できる。
+// 公開ポートで通信を受け、起動確認済みのリリースへ転送する管理サーバーを作る。
+// テストでは専用の一時フォルダと公開ポート0を指定でき、戻り値のcloseで終了できる。
 export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
   if (fs.existsSync(path.join(root, '.deployment-scope.json'))) {
     throw new Error('旧方式のアプリ専用公開先は使用できません');
@@ -79,13 +87,18 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
   const ports = publicPorts || readPorts(root, 'production');
   const configured = Array.isArray(ports) ? ports : [ports.APP_PORT, ports.LOG_PORT];
   const token = randomBytes(32).toString('hex');
+  // 現在、新しいリクエストを受け付ける公開版。
   let active;
+  // 内部ポートで起動確認を済ませ、公開切り替えを待つ版。
   let candidate;
+  // prepare・publish・stopなど、状態を変更する管理操作の実行中フラグ。
   let busy = false;
+  // 切り替え後、既存の通信が完了するまで残す旧版。
   const retiring = new Set();
   const listeners = [];
   const currentFile = path.join(root, '.active-release.json');
 
+  // 管理要求のリリース名を、本番のreleases内にある実フォルダへ解決する。
   function releasePath(id) {
     if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error('リリース名が不正です');
     const directory = path.join(root, 'releases', id);
@@ -95,28 +108,33 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
     return directory;
   }
 
+  // 1リリースのアプリとログサーバーを停止する。同じ版への停止要求は1回にまとめる。
   async function stopRelease(release) {
     if (!release) return;
     if (release.stopping) return release.stopping;
     release.stopping = (async () => {
       for (const stream of release.streams) stream.destroy();
       await Promise.all(release.children.map(child => new Promise(resolve => {
-      if (child.exitCode !== null || child.signalCode !== null) return resolve();
-      const timeout = setTimeout(() => child.kill(), 10000);
-      child.once('exit', () => { clearTimeout(timeout); resolve(); });
-      if (child.connected) child.send('production:stop', error => { if (error) child.kill(); });
-      else child.kill();
+        if (child.exitCode !== null || child.signalCode !== null) return resolve();
+        // まず通常の終了処理を依頼し、応答しない子プロセスは10秒後に終了させる。
+        const timeout = setTimeout(() => child.kill(), 10000);
+        child.once('exit', () => { clearTimeout(timeout); resolve(); });
+        if (child.connected) child.send('production:stop', error => { if (error) child.kill(); });
+        else child.kill();
       })));
       retiring.delete(release);
     })();
     return release.stopping;
   }
 
+  // 旧版の通常リクエストがすべて終わった時点で停止する。公開版は停止しない。
   function drain(release) {
     if (!release || release === active || release.inflight.size) return;
     void stopRelease(release).catch(error => console.error('旧版の停止失敗:', error.message));
   }
 
+  // 新版を内部ポートで起動し、公開版の通信を継続したままヘルスチェックする。
+  // 両サーバーが応答した場合だけcandidateに登録し、失敗時は起動した子を片付ける。
   async function prepare(id) {
     if (candidate) throw new Error('すでに準備中のリリースがあります');
     const directory = releasePath(id);
@@ -125,6 +143,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
     if (runtime.appName !== undefined) {
       throw new Error('旧方式のアプリ専用リリースは公開できません');
     }
+    // 通常通信とSSEの接続を別々に追跡し、切り替え後の停止タイミングを判断する。
     const release = { id, version: runtime.version, children: [], ports: [], inflight: new Set(), streams: new Set() };
     // アプリとログサーバーを起動して応答を確認する。途中で失敗した子プロセスは停止する。
     try {
@@ -132,6 +151,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
       fs.mkdirSync(outputDirectory, { recursive: true });
       const scripts = ['server.js', 'log/server-log.js'];
       const readyTasks = scripts.map((script, index) => {
+        // index=0はアプリ、index=1はログ閲覧。公開ポート・内部ポートも同じ順で対応する。
         const outputFile = path.join(outputDirectory, index === 0 ? 'server.log' : 'log-server.log');
         const output = fs.openSync(outputFile, 'a');
         const child = fork(path.join(directory, script), [], {
@@ -155,6 +175,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
         });
       });
       await Promise.all(readyTasks);
+      // 起動通知だけでは成功にせず、版番号とPIDも照合して別プロセスへの誤接続を防ぐ。
       for (const [index, port] of release.ports.entries()) {
         const response = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(5000) });
         const data = await response.json();
@@ -165,6 +186,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
     } catch (error) { await stopRelease(release); throw error; }
   }
 
+  // 公開ポートへのリクエストを、受付時点の公開版の内部ポートへ中継する。
   function proxy(index, req, res) {
     const release = active; // 通信開始時の接続先を保持し、途中で新版へ変更しない。
     if (!release) { res.writeHead(503); return res.end('本番サーバーは停止中です'); }
@@ -178,6 +200,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
     let upstreamResponse;
     let completed = false;
     let downstreamClosed = false;
+    // end・error・closeが重なっても、通信完了の後片付けと旧版の停止判定は1回だけ行う。
     function done() {
       if (completed) return;
       completed = true;
@@ -186,6 +209,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
       drain(release);
     }
     const headers = stripHopHeaders(req.headers);
+    // 利用者が送った転送元情報は採用せず、実際の接続元IPを業務サーバーへ渡す。
     headers['x-forwarded-for'] = req.socket.remoteAddress;
     headers['x-forwarded-proto'] = 'http';
     headers['x-forwarded-host'] = req.headers.host;
@@ -218,6 +242,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
     req.pipe(upstream);
   }
 
+  // 起動確認済みの候補を公開版にする。公開ポートは維持し、旧版の通信は完了まで待つ。
   async function publish() {
     if (!candidate) throw new Error('起動確認済みの新版がありません');
     if (candidate.children.some(child => child.exitCode !== null || child.signalCode !== null)) throw new Error('新版が終了したため切り替えを中断しました');
@@ -256,6 +281,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
     return { version: active.version };
   }
 
+  // 公開版・準備中・通信完了待ちの全プロセスと、公開ポートの待ち受けを終了する。
   async function stopAll() {
     const releases = [active, candidate, ...retiring];
     active = candidate = undefined;
@@ -279,6 +305,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
     }
   }
 
+  // 管理APIはループバックだけで待ち受け、起動ごとに作ったトークンで操作元を確認する。
   const control = http.createServer(async (req, res) => {
     const reply = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(value)); };
     if (req.method !== 'POST' || req.headers.authorization !== `Bearer ${token}`) return reply(403, { error: '管理要求が許可されていません' });
@@ -291,10 +318,12 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
         version: active?.version, release: active?.id, prepared: candidate?.id,
         draining: retiring.size, ports: listeners.map(server => server.address().port),
       });
+      // 状態照会以外は同時に実行しない。準備中に別の切り替えや停止が割り込むのを防ぐ。
       if (busy) return reply(409, { error: '公開サーバーを操作中です' });
       busy = true;
       try {
         let result = { ok: true };
+        // prepareで確認 → publishで切り替え。discardは公開前の候補だけを取り消す。
         if (action === 'prepare') result = await prepare(release);
         else if (action === 'publish') result = await publish();
         else if (action === 'discard') { await stopRelease(candidate); candidate = undefined; }
@@ -302,6 +331,7 @@ export async function manageGateway(root, publicPorts, host = '0.0.0.0') {
           if (active) result = { version: active.version, alreadyRunning: true };
           else { await prepare(JSON.parse(fs.readFileSync(currentFile, 'utf8')).id); result = await publish(); }
         }
+        // stopはアプリを停止して管理APIを残す。exitは応答後に管理プロセスも終了する。
         else if (action === 'stop' || action === 'exit') await stopAll();
         else throw new Error('不明な管理操作です');
         reply(200, result);
@@ -323,6 +353,7 @@ if (import.meta.main || startedByPm2) {
     if (action === 'manage') {
       const manager = await manageGateway(defaultRoot);
       let closing = false;
+      // OSやPM2から終了を求められたら、子プロセスを含めて停止してから終了する。
       const shutdown = async () => {
         if (closing) return;
         closing = true;

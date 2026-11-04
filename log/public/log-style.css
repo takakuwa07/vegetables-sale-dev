@@ -19,9 +19,15 @@
   box-sizing: border-box;
 }
 
+/* 画面全体の高さを固定し、スクロールはログ本文の枠内だけで行う。 */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
   background:
     radial-gradient(circle at top left, rgba(34, 197, 94, 0.16), transparent 34rem),
     radial-gradient(circle at top right, rgba(59, 130, 246, 0.14), transparent 32rem),
@@ -34,25 +40,29 @@ body {
 /* ✅ ページ枠 */
 /* ----------------------------------------------------------- */
 .page-shell {
-  width: min(1440px, 100%);
-  min-height: 100vh;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   margin: 0 auto;
-  padding: 1.2rem;
+  padding: 0.6rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.45rem;
+  overflow: hidden;
 }
 
 /* ----------------------------------------------------------- */
 /* ✅ ヘッダー */
 /* ----------------------------------------------------------- */
 .app-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
 
-  padding: 1rem 1.2rem;
+  padding: 0.5rem 0.8rem;
   border: 1px solid var(--line-soft);
   border-radius: 1.2rem;
   background: rgba(15, 23, 42, 0.72);
@@ -63,12 +73,14 @@ body {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  min-width: 0;
+  gap: 0.65rem;
 }
 
 .app-mark {
-  width: 3.2rem;
-  height: 3.2rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
   border-radius: 1rem;
   display: grid;
   place-items: center;
@@ -83,14 +95,14 @@ body {
 
 .app-title {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   letter-spacing: 0.03em;
 }
 
 .app-subtitle {
-  margin: 0.25rem 0 0;
+  margin: 0.1rem 0 0;
   color: var(--text-sub);
-  font-size: 0.82rem;
+  font-size: 0.74rem;
 }
 
 .header-right {
@@ -134,21 +146,23 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
+  overflow: hidden;
 }
 
 /* ----------------------------------------------------------- */
 /* ✅ ステータスカード */
 /* ----------------------------------------------------------- */
 .status-card {
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: 1.8fr 1fr 0.7fr 0.7fr;
-  gap: 0.8rem;
+  gap: 0.5rem;
 }
 
 .status-item {
   min-width: 0;
-  padding: 0.9rem 1rem;
+  padding: 0.45rem 0.7rem;
   border-radius: 1rem;
   background: rgba(2, 6, 23, 0.55);
   border: 1px solid var(--line-soft);
@@ -156,9 +170,9 @@ body {
 
 .status-label {
   display: block;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.15rem;
   color: var(--text-sub);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
 }
 
 .status-value {
@@ -167,7 +181,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: Consolas, "Courier New", monospace;
-  font-size: 0.86rem;
+  font-size: 0.78rem;
 }
 
 /* ----------------------------------------------------------- */
@@ -187,12 +201,13 @@ body {
 }
 
 .log-panel-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 
-  padding: 0.85rem 1rem;
+  padding: 0.35rem 0.75rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   background: rgba(15, 23, 42, 0.72);
 }
@@ -200,13 +215,14 @@ body {
 .log-title-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  flex-shrink: 0;
+  gap: 0.4rem;
 }
 
 .log-title-row h2 {
   margin: 0;
-  font-size: 0.85rem;
-  letter-spacing: 0.16em;
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
   color: #d1fae5;
   font-family: Consolas, "Courier New", monospace;
 }
@@ -221,8 +237,10 @@ body {
 
 .log-help-text {
   margin: 0;
+  max-width: 26rem;
   color: var(--text-sub);
-  font-size: 0.74rem;
+  font-size: 0.68rem;
+  line-height: 1.3;
 }
 
 /* ----------------------------------------------------------- */
@@ -232,11 +250,10 @@ body {
   flex: 1;
   min-height: 0;
   margin: 0;
-  padding: 1rem 1.1rem;
+  padding: 0.55rem 0.75rem;
   overflow: auto;
-  /* ログをページ全体ではなく、この枠の中でスクロールさせる。 */
-  height: 65vh;
-  max-height: 65vh;
+  /* ヘッダーとカードを除いた残りの高さをすべて使い、固定のvh制限は設けない。 */
+  overscroll-behavior: contain;
   /* 初回の最下部への移動が完了してから、ログ本文を表示する。 */
   visibility: hidden;
 
@@ -248,8 +265,8 @@ body {
 
   color: #e5e7eb;
   font-family: Consolas, "Courier New", monospace;
-  font-size: 0.86rem;
-  line-height: 1.65;
+  font-size: 0.78rem;
+  line-height: 1.35;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 
@@ -259,6 +276,11 @@ body {
 
 .log-output::selection {
   background: rgba(34, 197, 94, 0.35);
+}
+
+.log-output:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
 }
 
 /* ----------------------------------------------------------- */
@@ -287,18 +309,33 @@ body {
 /* ✅ 画面幅が狭いとき */
 /* ----------------------------------------------------------- */
 @media (max-width: 900px) {
-  .app-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .status-card {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .log-panel-header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 0.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-shell {
+    padding: 0.35rem;
+  }
+
+  .app-mark {
+    display: none;
+  }
+
+  .app-title {
+    font-size: 1rem;
+  }
+
+  .connection-status {
+    min-width: 0;
+    padding: 0.35rem 0.6rem;
   }
 }
 
@@ -307,7 +344,7 @@ body {
 /* ----------------------------------------------------------- */
 .log-line {
   display: block;
-  min-height: 1.65em;
+  min-height: 1.35em;
 }
 
 .log-line.is-error {
@@ -315,7 +352,7 @@ body {
   background: linear-gradient(90deg, rgba(239, 68, 68, 0.28), rgba(239, 68, 68, 0.08), transparent);
   border-left: 4px solid #ef4444;
   padding-left: 0.6rem;
-  margin: 0.08rem 0;
+  margin: 0.02rem 0;
   border-radius: 0.35rem;
   font-weight: 700;
   text-shadow: 0 0 12px rgba(239, 68, 68, 0.45);

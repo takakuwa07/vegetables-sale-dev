@@ -19,18 +19,6 @@ const logFilePath = path.join(projectRoot, 'log/server-app.log');
 fs.closeSync(fs.openSync(logFilePath, 'a'));
 
 // -----------------------------------------------------------
-// ✅ 表示する最大行数
-// ログファイルが何百MBになっても、ブラウザへ送るのは最新1000行だけにする
-// -----------------------------------------------------------
-// const MAX_DISPLAY_LINES = 1000;
-
-// -----------------------------------------------------------
-// ✅ ファイル末尾から読むときのサイズ
-// 64KBずつ後ろから読んで、1000行集まったら止める
-// -----------------------------------------------------------
-// const READ_CHUNK_SIZE = 64 * 1024;
-
-// -----------------------------------------------------------
 // ✅ SSE接続中のブラウザ一覧
 // 複数の人が同時に画面を開いた場合も配信できるように配列で管理
 // -----------------------------------------------------------
@@ -65,90 +53,8 @@ function formatFileSize(bytes) {
 
 // -----------------------------------------------------------
 // ✅ 関数
-// ログファイルの末尾から最新行だけ読む
-// -----------------------------------------------------------
-// function readLastLines(filePath, maxLines) {
-//   // ファイル情報を取得
-//   const stat = fs.statSync(filePath);
-
-//   // ファイルが空なら空文字を返す
-//   if (stat.size === 0) {
-//     return {
-//       logText: '',
-//       displayedLineCount: 0,
-//       fileSizeBytes: stat.size,
-//       fileSizeText: formatFileSize(stat.size)
-//     };
-//   }
-
-//   // ファイルを開く
-//   const fd = fs.openSync(filePath, 'r');
-
-//   try {
-//     let position = stat.size;
-//     let chunks = [];
-//     let lineCount = 0;
-
-//     // -------------------------------------------------------
-//     // ✅ ファイルの後ろから少しずつ読む
-//     // -------------------------------------------------------
-//     // 例：
-//     // 1回目：末尾64KB
-//     // 2回目：その前の64KB
-//     // 3回目：さらに前の64KB
-//     //
-//     // 1000行分が集まったら、それ以上は読まない。
-//     // これにより、ログファイルが何百MBでも全文読み込みしない。
-//     // -------------------------------------------------------
-//     while (position > 0 && lineCount <= maxLines) {
-//       const readSize = Math.min(READ_CHUNK_SIZE, position);
-//       position = position - readSize;
-
-//       const buffer = Buffer.alloc(readSize);
-
-//       fs.readSync(fd, buffer, 0, readSize, position);
-
-//       const chunkText = buffer.toString('utf8');
-
-//       // 後ろから読んでいるので、先頭に追加して元の順番へ戻す
-//       chunks.unshift(chunkText);
-
-//       // 現時点で集まった改行数を数える
-//       lineCount = chunks.join('').split(/\r?\n/).length;
-//     }
-
-//     // 読み取った範囲を1つの文字列にする
-//     const text = chunks.join('');
-
-//     // 改行で配列化
-//     const lines = text.split(/\r?\n/);
-
-//     // 最後が空行なら除外
-//     if (lines[lines.length - 1] === '') {
-//       lines.pop();
-//     }
-
-//     // 最新 maxLines 行だけ取得
-//     const lastLines = lines.slice(-maxLines);
-
-//     return {
-//       // ここでは古い → 新しいの順番で返す
-//       // 画面側で reverse して、新しい → 古いにする
-//       logText: lastLines.join('\n'),
-//       displayedLineCount: lastLines.length,
-//       fileSizeBytes: stat.size,
-//       fileSizeText: formatFileSize(stat.size)
-//     };
-
-//   } finally {
-//     // ファイルを閉じる
-//     fs.closeSync(fd);
-//   }
-// }
-
-// -----------------------------------------------------------
-// ✅ 関数
-// ログファイルの中身を読み取り、画面用のオブジェクトにして返す
+// ログ全文とファイル情報を読み取り、初回取得・SSE配信に共通の形式で返す。
+// 読み取り失敗もオブジェクトで返し、画面側が接続状態や案内を表示できるようにする。
 // -----------------------------------------------------------
 function readServerLog() {
   try {
@@ -210,49 +116,7 @@ function readServerLog() {
     };
   }
   
-  // try {
-  //   // ファイルが存在しない場合
-  //   if (!fs.existsSync(logFilePath)) {
-  //     return {
-  //       ok: false,
-  //       message: 'server-app.log が見つかりません',
-  //       logFilePath,
-  //       logText: '',
-  //       displayedLineCount: 0,
-  //       fileSizeText: '---',
-  //       lastUpdated: '---'
-  //     };
-  //   }
 
-  //   // ログファイルの情報を取得
-  //   const stat = fs.statSync(logFilePath);
-
-  //   // 最新1000行だけ取得
-  //   const logData = readLastLines(logFilePath, MAX_DISPLAY_LINES);
-
-  //   return {
-  //     ok: true,
-  //     message: 'ログ取得成功',
-  //     logFilePath,
-  //     logText: logData.logText,
-  //     displayedLineCount: logData.displayedLineCount,
-  //     maxDisplayLines: MAX_DISPLAY_LINES,
-  //     fileSizeBytes: logData.fileSizeBytes,
-  //     fileSizeText: logData.fileSizeText,
-  //     lastUpdated: stat.mtime.toLocaleString('ja-JP')
-  //   };
-
-  // } catch (error) {
-  //   return {
-  //     ok: false,
-  //     message: error.message,
-  //     logFilePath,
-  //     logText: '',
-  //     displayedLineCount: 0,
-  //     fileSizeText: '---',
-  //     lastUpdated: '---'
-  //   };
-  // }
 }
 
 // -----------------------------------------------------------
@@ -260,6 +124,7 @@ function readServerLog() {
 // 接続中のブラウザへログ内容を一斉送信する
 // -----------------------------------------------------------
 function broadcastLog() {
+  // 1回の更新につき読み取り・JSON変換は1回だけ行い、同じ内容を全接続へ送る。
   const data = readServerLog();
   const payload = `data: ${JSON.stringify(data)}\n\n`;
 
@@ -327,6 +192,7 @@ router.get('/stream', (req, res) => {
   // すぐにヘッダーを送る
   res.flushHeaders?.();
 
+  // 応答を閉じずに保持し、変更があったときに同じ接続へログ全体を再送する。
   // 接続中ブラウザ一覧に追加
   clients.push(res);
 

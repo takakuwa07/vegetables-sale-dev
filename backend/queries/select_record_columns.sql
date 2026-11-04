@@ -1,4 +1,4 @@
--- 📋 列定義と主キーの順番を、実テーブルから読み取る。DDLは実行しない。
+-- records-columns: 列定義と主キーの順番を、設定されたテーブルから読み取る。DDLは実行しない。
 SELECT
     c.name,
     TYPE_NAME(c.system_type_id) AS type,
@@ -14,5 +14,5 @@ OUTER APPLY (
         ON ic.object_id = i.object_id AND ic.index_id = i.index_id
     WHERE i.object_id = c.object_id AND i.is_primary_key = 1 AND ic.column_id = c.column_id
 ) AS pk
-WHERE s.name = N'dbo' AND t.name = N't_vegetable_sales' AND c.is_hidden = 0
+WHERE s.name = @schemaName AND t.name = @tableName AND c.is_hidden = 0
 ORDER BY c.column_id;
