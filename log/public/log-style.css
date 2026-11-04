@@ -153,6 +153,36 @@ body {
 /* ----------------------------------------------------------- */
 /* ✅ ステータスカード */
 /* ----------------------------------------------------------- */
+/* 🏷️ 対象情報は横並びを基本にし、ログ本文の高さをできるだけ残す。 */
+.source-context {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  flex-shrink: 0;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.source-label, .source-id {
+  color: var(--text-sub);
+  margin-right: 0.4rem;
+}
+
+.source-context a {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+.source-environment {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #64748b;
+  border-radius: 0.3rem;
+}
+
 .status-card {
   flex-shrink: 0;
   display: grid;

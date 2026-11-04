@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import application, { validateApplication } from '../config/application.js';
+import { renderLogPage } from '../log/backend/log-page.js';
 import { renderApplicationHtml } from '../middleware/frontend.js';
 import { generateDatabaseSetup } from '../scripts/generate-database-setup.js';
 
@@ -63,4 +64,17 @@ test('SQLやURLの構造を変えるアプリ設定は受け付けない', () =>
   }
 
   assert.throws(() => validateApplication({ ...application, id: "name'other" }));
+});
+
+test('ログ対象の表示は環境を明示し、アプリ名をHTMLとして実行しない', () => {
+  const template = '<h1>{{logApplicationTitle}}</h1><p>{{logApplicationId}} {{logEnvironment}}</p><a href="{{logApplicationUrl}}">{{logApplicationUrl}}</a>';
+  const html = renderLogPage(template, {
+    application: { title: '<script>example</script>', id: 'test-app' },
+    environment: 'development', applicationUrl: 'http://127.0.0.1:2001/',
+  });
+  assert.ok(html.includes('&lt;script&gt;example&lt;/script&gt;'));
+  assert.ok(html.includes('test-app 開発'));
+  assert.ok(html.includes('href="http://127.0.0.1:2001/"'));
+  assert.equal(html.includes('<script>'), false);
+  assert.equal(html.includes('{{log'), false);
 });

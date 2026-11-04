@@ -125,6 +125,12 @@ function inspectHtml(file) {
       continue;
     }
 
+    // 🏷️ ログ対象の公開URLは配信時に生成するHTTPリンク。ローカル資産として検査しない。
+    // 任意のテンプレートを除外せず、この画面の既知の差込だけを対象にする。
+    if (file === path.join(root, 'log/public/index-log-viewer.html') && ref === '{{logApplicationUrl}}') {
+      continue;
+    }
+
     // ?以降のクエリと、#以降のページ内位置を除く。
     // 例：/app.js?v=2 → /app.js
     const refPath = ref.split(/[?#]/)[0];

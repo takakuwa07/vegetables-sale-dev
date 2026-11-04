@@ -177,7 +177,7 @@ function renderLog(data) {
 
   logFilePathEl.innerText = data.logFilePath || '---';
   lastUpdatedEl.innerText = data.lastUpdated || '---';
-  logLineCountEl.innerText = `${data.displayedLineCount || 0} 行`;
+  logLineCountEl.innerText = `${(data.displayedLineCount || 0).toLocaleString('ja-JP')} / 10,000 行${data.byteLimited ? '（16 MiB上限）' : ''}`;
   logFileSizeEl.innerText = data.fileSizeText || '---';
 
   // 更新前に最下部を見ていたか確認する。上へスクロールしていれば、その位置を保つ。
@@ -188,6 +188,10 @@ function renderLog(data) {
   // ファイルの追記順（古い → 新しい）を維持する。例外のスタックも行順を崩さない。
   const lines = logText.split(/\r?\n/);
   if (lines[lines.length - 1] === '') lines.pop();
+  // 🛡️ 表示側でも上限を守り、一度に作成するログ行の要素数を増やしすぎない。
+  if (lines.length > 10000) {
+    lines.splice(0, lines.length - 10000);
+  }
 
   // 以前のUTC形式のログも、日本時間の表示へ変換する。ファイル自体は書き換えない。
   const displayLines = lines.map(line => line

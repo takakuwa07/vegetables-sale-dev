@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Server Log Viewer</title>
+  <title>{{logApplicationTitle}} | Server Log Viewer</title>
   <link rel="stylesheet" href="ress.min.css">
   <link rel="stylesheet" href="log-style.css">
   <link rel="icon" href="./images/planet-earth.png">
@@ -22,7 +22,7 @@
         <div class="app-mark">LOG</div>
         <div>
           <h1 class="app-title">Server Log Viewer</h1>
-          <p class="app-subtitle">server-app.log リアルタイム監視</p>
+          <p class="app-subtitle">アプリの起動・エラー・APIアクセス（過去の記録を含む）</p>
         </div>
       </div>
 
@@ -38,10 +38,16 @@
     <!-- ----------------------------------------------------------- -->
     <main class="main-area">
 
+      <!-- 🏷️ 対象アプリと、そのアプリを開く公開URLを明示する -->
+      <section class="source-context" aria-label="ログの対象">
+        <div><span class="source-label">対象アプリ</span> <strong>{{logApplicationTitle}}</strong> <span class="source-id">{{logApplicationId}}</span> <span class="source-environment">{{logEnvironment}}</span></div>
+        <div><span class="source-label">対象URL</span> <a id="source-application-url" href="{{logApplicationUrl}}" target="_blank" rel="noopener noreferrer">{{logApplicationUrl}}</a></div>
+      </section>
+
       <!-- ✅ ログ情報カード -->
       <section class="status-card">
         <div class="status-item">
-          <span class="status-label">監視ファイル</span>
+          <span class="status-label">表示中のログファイル</span>
           <span id="log-file-path" class="status-value">読み込み中...</span>
         </div>
 
@@ -70,7 +76,7 @@
           </div>
 
           <p class="log-help-text">
-            最新ログは最下部に表示・最下部では自動追従
+            直近最大10,000行 · 最下部では自動追従
           </p>
         </div>
 

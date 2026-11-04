@@ -107,6 +107,42 @@ test('実アプリを配布し、DB失敗時の起動停止と成功時のAPI・
   assert.deepEqual(await (await fetch(base + '/api/deployment-policy')).json(), {
     status: 'ok', version: '261104-001-TestUser', updateMode: 'force',
   });
-  assert.equal((await fetch(`http://127.0.0.1:${state.ports[1]}/server-log-viewer/index-log-viewer.html`)).status, 200);
+  const logPage = await fetch(`http://127.0.0.1:${state.ports[1]}/server-log-viewer/index-log-viewer.html`);
+  assert.equal(logPage.status, 200);
+  const logHtml = await logPage.text();
+  assert.ok(logHtml.includes(configuredApplication.title));
+  assert.ok(logHtml.includes(configuredApplication.id));
+  assert.match(logHtml, /http:\/\/[^"<> ]+:3001\//);
+  assert.ok(logHtml.includes('本番'));
+  assert.equal(logHtml.includes('{{log'), false);
+  assert.equal(logHtml.includes('id="development-environment-badge"'), false);
   assert.match(fs.readFileSync(path.join(root, 'log/server-app.log'), 'utf8'), /アプリを起動しました: production/);
+
+  // 📜 配布した実ログAPIとSSEの両方が、大量ログを直近10,000行へ制限する。
+  const logFile = path.join(root, 'log/server-app.log');
+  fs.appendFileSync(logFile, Array.from({ length: 10005 }, (_, i) => `検査用ログ行${i + 1}`).join('\n') + '\n');
+  const logBase = `http://127.0.0.1:${state.ports[1]}/api/server-log-viewer`;
+  const recent = await (await fetch(logBase + '/log')).json();
+  assert.equal(recent.displayedLineCount, 10000);
+  assert.ok(recent.logText.startsWith('検査用ログ行6\n'));
+  assert.ok(recent.logText.endsWith('検査用ログ行10005\n'));
+  assert.equal(recent.truncated, true);
+
+  const controller = new AbortController();
+  try {
+    const stream = await fetch(logBase + '/stream', { signal: controller.signal });
+    const reader = stream.body.getReader();
+    const decoder = new TextDecoder();
+    let event = '';
+    while (!event.includes('\n\n')) {
+      const chunk = await reader.read();
+      assert.equal(chunk.done, false);
+      event += decoder.decode(chunk.value, { stream: true });
+    }
+    const streamed = JSON.parse(event.split('\n\n')[0].slice('data: '.length));
+    assert.equal(streamed.displayedLineCount, 10000);
+    assert.equal(streamed.logText, recent.logText);
+  } finally {
+    controller.abort();
+  }
 });

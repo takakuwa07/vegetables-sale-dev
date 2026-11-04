@@ -12,6 +12,8 @@ import { setupLogger } from '../middleware/logger.js';
 import { projectRoot } from '../config/project-root.js';
 import { readPorts } from '../config/ports.js';
 import { addDevelopmentBadge } from '../middleware/development-badge.js';
+import application from '../config/application.js';
+import { renderLogPage } from './backend/log-page.js';
 
 // -----------------------------------------------------------
 // 📝 ログ専用サーバーの準備
@@ -56,17 +58,26 @@ try {
   // URLをWindowsでも使えるファイルパスに変換し、HTML・CSS・JSなどの配信を用意する。
   const serveLogFiles = express.static(fileURLToPath(publicPath));
 
-  if (runtime.environment === 'development') {
-    // 業務サーバーと同じ開発用表示を、ログ画面の両方のURLへ追加する。
-    const logHtml = new URL('./public/index-log-viewer.html', import.meta.url);
-    app.get(['/server-log-viewer/index-log-viewer.html', '/apps/server-log-viewer/frontend/index-log-viewer.html'], async (req, res, next) => {
-      try {
-        res.set('Cache-Control', 'no-store');
-        res.type('html').send(addDevelopmentBadge(await readFile(logHtml, 'utf8')));
-      } catch (error) {
-        next(error);
+  // 🏷️ 開発・本番とも対象アプリと公開URLを表示する。内部ポートやDBの秘密値は渡さない。
+  const logHtml = new URL('./public/index-log-viewer.html', import.meta.url);
+  app.get(['/server-log-viewer/index-log-viewer.html', '/apps/server-log-viewer/frontend/index-log-viewer.html'], async (req, res, next) => {
+    try {
+      let html = renderLogPage(await readFile(logHtml, 'utf8'), {
+        application,
+        environment: runtime.environment,
+        applicationUrl: `http://${getServerAddress()}:${ports.APP_PORT}/`,
+      });
+      if (runtime.environment === 'development') {
+        html = addDevelopmentBadge(html);
       }
-    });
+      res.set('Cache-Control', 'no-store');
+      res.type('html').send(html);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  if (runtime.environment === 'development') {
     app.get('/development-badge.js', (req, res) => {
       res.sendFile(fileURLToPath(new URL('../public/development-badge.js', import.meta.url)));
     });

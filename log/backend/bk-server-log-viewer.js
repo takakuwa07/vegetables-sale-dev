@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { formatLogDate } from '../../middleware/logger.js';
 import { projectRoot } from '../../config/project-root.js';
+import { readRecentLog } from './recent-log.js';
 
 const router = express.Router();
 
@@ -53,7 +54,7 @@ function formatFileSize(bytes) {
 
 // -----------------------------------------------------------
 // ✅ 関数
-// ログ全文とファイル情報を読み取り、初回取得・SSE配信に共通の形式で返す。
+// 直近最大10,000行とファイル情報を読み取り、初回取得・SSE配信に共通の形式で返す。
 // 読み取り失敗もオブジェクトで返し、画面側が接続状態や案内を表示できるようにする。
 // -----------------------------------------------------------
 function readServerLog() {
@@ -71,27 +72,15 @@ function readServerLog() {
       };
     }
 
-    // ログファイルの情報を取得
-    const stat = fs.statSync(logFilePath);
+    // 📜 ファイル全体ではなく末尾だけを読む。初回取得とSSEで同じ上限を使う。
+    const { stat, logText: recentText, displayedLineCount, truncated, byteLimited, maxLines } = readRecentLog(logFilePath);
 
-    // -------------------------------------------------------
-    // ✅ server-app.log を全文取得
-    // -------------------------------------------------------
-    // 注意：
-    // ログが何百MBある場合、この処理で全文をメモリに読み込む。
-    // そのため、ログ容量が大きい現場では動作が重くなる可能性あり。
     // 旧起動スクリプトが付けた余分な日時を除き、[日時]から始まるログを配信する。
     // 元のログファイルは保持する。修正前に記録された行にも適用する。
-    const logText = fs.readFileSync(logFilePath, 'utf8').replace(
+    const logText = recentText.replace(
       /^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2} .*?(?=\[\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\])/gm,
       ''
     );
-
-    // 行数を数える
-    // 空ファイルなら 0 行にする
-    const displayedLineCount = logText
-      ? logText.split(/\r?\n/).length
-      : 0;
 
     return {
       ok: true,
@@ -99,6 +88,9 @@ function readServerLog() {
       logFilePath,
       logText,
       displayedLineCount,
+      truncated,
+      byteLimited,
+      maxLines,
       fileSizeBytes: stat.size,
       fileSizeText: formatFileSize(stat.size),
       lastUpdated: formatLogDate(stat.mtime)
@@ -124,12 +116,18 @@ function readServerLog() {
 // 接続中のブラウザへログ内容を一斉送信する
 // -----------------------------------------------------------
 function broadcastLog() {
+  if (clients.length === 0) {
+    return;
+  }
   // 1回の更新につき読み取り・JSON変換は1回だけ行い、同じ内容を全接続へ送る。
   const data = readServerLog();
   const payload = `data: ${JSON.stringify(data)}\n\n`;
 
   for (const client of clients) {
-    client.write(payload);
+    // 🐢 受信の遅い接続へ未送信データを積み続けない。次の更新で最新の範囲を送る。
+    if (!client.writableNeedDrain && !client.destroyed) {
+      client.write(payload);
+    }
   }
 }
 
@@ -192,7 +190,7 @@ router.get('/stream', (req, res) => {
   // すぐにヘッダーを送る
   res.flushHeaders?.();
 
-  // 応答を閉じずに保持し、変更があったときに同じ接続へログ全体を再送する。
+  // 応答を閉じずに保持し、変更があったときに同じ接続へ直近最大10,000行を送る。
   // 接続中ブラウザ一覧に追加
   clients.push(res);
 

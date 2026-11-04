@@ -92,11 +92,6 @@ h1 {
   text-align: right;
   flex-shrink: 0;
 }
-/* 🛠️ 開発の目印もヘッダー内に収め、タイトルや表へ重ねない。 */
-.app-header #development-environment-badge {
-  position: static !important;
-  flex-shrink: 0;
-}
 .header-status p {
   margin-top: 3px;
   color: var(--muted);
@@ -411,12 +406,6 @@ tr:hover td {
     gap: 9px;
     flex: 1;
     min-width: 0;
-  }
-  .app-header #development-environment-badge {
-    order: 1;
-    grid-column: 1 / -1;
-    justify-self: end;
-    margin-left: auto;
   }
   .brand-mark {
     width: 36px;
