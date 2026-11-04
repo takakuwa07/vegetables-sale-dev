@@ -1,6 +1,6 @@
 {
   "name": "vegetables-sale",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "野菜売上テーブルの閲覧と安全な公開版切り替え",
   "main": "server.js",
   "scripts": {

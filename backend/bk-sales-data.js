@@ -61,7 +61,8 @@ export function buildSalesQuery(columns, options) {
   // 主キーを補助順序に使い、値が同じ行のページ境界を安定させる。
   const order = [sortColumn, ...keys.filter(column => column.name !== sortColumn.name)]
     .map(column => {
-      const name = identifier(column.name);
+      // 表示用の文字列エイリアスではなく、元テーブルの型で並べ替える。
+      const name = 'sales.' + identifier(column.name);
       const expression = ['text', 'ntext'].includes(column.type) ? `CONVERT(nvarchar(max), ${name})` : name;
       return `${expression} ${column === sortColumn && options.direction === 'desc' ? 'DESC' : 'ASC'}`;
     });
@@ -87,7 +88,7 @@ export function buildSalesQuery(columns, options) {
     : '';
   return {
     count: `SELECT COUNT_BIG(*) AS total FROM dbo.t_vegetable_sales ${where};`,
-    rows: `SELECT ${select.join(', ')} FROM dbo.t_vegetable_sales ${where} ORDER BY ${order.join(', ')} OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;`,
+    rows: `SELECT ${select.join(', ')} FROM dbo.t_vegetable_sales AS sales ${where} ORDER BY ${order.join(', ')} OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;`,
     pattern,
     sort: sortColumn.name,
     stableOrder: keys.length > 0,

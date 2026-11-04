@@ -60,7 +60,7 @@ test('SQLインジェクションを防ぎ、LIKE記号は文字として検索�
   const options = parseSalesOptions({ search: "x%' OR 1=1;--_[~", sort: 'memo]', direction: 'desc' });
   const query = buildSalesQuery(columns, options);
   assert.doesNotMatch(query.rows, /OR 1=1/);
-  assert.match(query.rows, /CONVERT\(nvarchar\(max\), \[memo\]\]\]\) DESC, \[sale_id\] ASC/);
+  assert.match(query.rows, /CONVERT\(nvarchar\(max\), sales\.\[memo\]\]\]\) DESC, sales\.\[sale_id\] ASC/);
   assert.equal(query.pattern, "%x~%' OR 1=1;--~_~[~~%");
   assert.throws(() => buildSalesQuery(columns, { ...options, sort: 'sale_id; DROP TABLE x' }), error => error.status === 400);
 });
@@ -72,7 +72,7 @@ test('数値の精度と日時を文字列で返し、主キーでページ順�
   assert.equal(result.rows[0].amount, '1234567890.1234');
   assert.equal(result.columns.length, 5);
   assert.equal(result.stableOrder, true);
-  assert.match(pool.calls.at(-1).query, /ORDER BY \[amount\] ASC, \[sale_id\] ASC/);
+  assert.match(pool.calls.at(-1).query, /ORDER BY sales\.\[amount\] ASC, sales\.\[sale_id\] ASC/);
   assert.match(pool.calls.at(-1).query, /CONVERT\(nvarchar\(100\), \[sold_at\], 121\)/);
   assert.deepEqual(pool.calls.at(-1).inputs, { search: '%%', offset: 0, limit: 50 });
 });
