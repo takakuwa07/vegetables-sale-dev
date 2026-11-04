@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#234f3e">
+  <title>野菜売上データ | Vegetable Sales</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/shared/ress.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="fr-vegetable-sales.js" defer></script>
+</head>
+<body>
+  <!-- 🥬 業務名とデータの取得状態 -->
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">V<span>↗</span></span>
+      <div>
+        <p class="eyebrow">VEGETABLE SALES</p>
+        <h1>野菜売上データ</h1>
+      </div>
+    </div>
+    <div class="header-status">
+      <span id="connection-status" class="status-pill">接続準備中</span>
+      <p>最終取得 <time id="last-fetched">―</time></p>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- 📋 元テーブルを列名・値のまま一覧する -->
+    <section class="intro" aria-labelledby="list-title">
+      <div>
+        <p class="section-label">SALES RECORDS</p>
+        <h2 id="list-title">売上レコード一覧</h2>
+        <p class="description">登録されている売上データを、そのまま確認できます。</p>
+      </div>
+      <div class="record-summary">
+        <div><span id="total-count">―</span><small>レコード</small></div>
+        <p><span id="column-count">―</span> 列 · 閲覧専用</p>
+      </div>
+    </section>
+
+    <section class="data-panel" aria-label="売上データ">
+      <div class="toolbar">
+        <form id="search-form" role="search">
+          <label for="search-input" class="sr-only">テーブル内を検索</label>
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input id="search-input" name="search" type="search" maxlength="100" placeholder="テーブル内を検索…" autocomplete="off">
+          <button type="submit" class="search-button">検索</button>
+        </form>
+        <div class="toolbar-actions">
+          <label class="page-size-label" for="page-size">表示件数
+            <select id="page-size">
+              <option value="25">25件</option>
+              <option value="50" selected>50件</option>
+              <option value="100">100件</option>
+              <option value="200">200件</option>
+            </select>
+          </label>
+          <button id="refresh-button" type="button" class="primary-button"><span aria-hidden="true">↻</span> 再取得</button>
+        </div>
+      </div>
+
+      <div class="table-caption">
+        <span><span class="table-dot" aria-hidden="true"></span> t_vegetable_sales</span>
+        <span id="result-context">全列を表示</span>
+      </div>
+      <div id="message" class="message" role="status" aria-live="polite">データを読み込んでいます…</div>
+      <p id="order-warning" class="order-warning" hidden>主キーがないため、同じ値の行の順番は一定にならない場合があります。</p>
+      <div id="table-region" class="table-region" tabindex="0" role="region" aria-label="売上データ表。縦横にスクロールできます" aria-busy="true">
+        <table id="sales-table">
+          <caption class="sr-only">野菜売上テーブルの全列と値</caption>
+          <thead id="table-head"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" hidden>
+          <span aria-hidden="true">⌕</span>
+          <h3>該当するデータがありません</h3>
+          <p>検索条件を変えるか、データを再取得してください。</p>
+        </div>
+      </div>
+      <footer class="pagination">
+        <p id="range-label">―</p>
+        <nav aria-label="ページ送り">
+          <button id="first-page" type="button" aria-label="最初のページ" disabled>«</button>
+          <button id="previous-page" type="button" aria-label="前のページ" disabled>‹</button>
+          <span id="page-label" aria-live="polite">1 / 1</span>
+          <button id="next-page" type="button" aria-label="次のページ" disabled>›</button>
+          <button id="last-page" type="button" aria-label="最後のページ" disabled>»</button>
+        </nav>
+      </footer>
+    </section>
+  </main>
+  <footer class="app-footer">
+    <span>vegetables_maintenance_db <span aria-hidden="true">/</span> dbo.t_vegetable_sales</span>
+    <span id="app-version">Vegetable Sales</span>
+  </footer>
+</body>
+</html>

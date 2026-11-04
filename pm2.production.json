@@ -1,0 +1,16 @@
+{
+  "apps": [
+    {
+      "name": "vegetables-sale-prod",
+      "script": "./scripts/production-gateway.js",
+      "args": "manage",
+      "exec_mode": "fork",
+      "instances": 1,
+      "watch": false,
+      "wait_ready": true,
+      "listen_timeout": 90000,
+      "kill_timeout": 15000,
+      "restart_delay": 3000
+    }
+  ]
+}

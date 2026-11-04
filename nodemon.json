@@ -1,0 +1,17 @@
+{
+  "watch": [
+    "server.js",
+    "runtime.json",
+    "backend",
+    "middleware",
+    "config",
+    "db",
+    ".env.development"
+  ],
+  "ext": "js,json,sql",
+  "ignore": [
+    "public/**",
+    "node_modules/**",
+    "*.log"
+  ]
+}

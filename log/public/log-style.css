@@ -1,0 +1,346 @@
+/* ----------------------------------------------------------- */
+/* ✅ 全体設定 */
+/* ----------------------------------------------------------- */
+:root {
+  /* --bg-main: #0f172a; */
+  /* --bg-panel: #111827; */
+  /* --bg-panel-deep: #020617; */
+  --text-main: #e5e7eb;
+  --text-sub: #94a3b8;
+  /* --line-soft: rgba(148, 163, 184, 0.25); */
+  --green: #22c55e;
+  /* --green-dark: #14532d; */
+  --yellow: #facc15;
+  /* --red: #ef4444; */
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.16), transparent 34rem),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.14), transparent 32rem),
+    linear-gradient(135deg, #020617 0%, #0f172a 48%, #111827 100%);
+  color: var(--text-main);
+  font-family: "Meiryo", "Yu Gothic UI", sans-serif;
+}
+
+/* ----------------------------------------------------------- */
+/* ✅ ページ枠 */
+/* ----------------------------------------------------------- */
+.page-shell {
+  width: min(1440px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ----------------------------------------------------------- */
+/* ✅ ヘッダー */
+/* ----------------------------------------------------------- */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 1.2rem;
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-mark {
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 1rem;
+  display: grid;
+  place-items: center;
+
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 55%, #86efac 100%);
+  color: #052e16;
+  font-family: Consolas, "Courier New", monospace;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 28px rgba(34, 197, 94, 0.35);
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: 0.03em;
+}
+
+.app-subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--text-sub);
+  font-size: 0.82rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.connection-status {
+  min-width: 8.6rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.connection-status.is-waiting {
+  background: rgba(250, 204, 21, 0.12);
+  color: var(--yellow);
+  border-color: rgba(250, 204, 21, 0.3);
+}
+
+.connection-status.is-live {
+  background: rgba(34, 197, 94, 0.12);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.connection-status.is-error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* ----------------------------------------------------------- */
+/* ✅ メイン */
+/* ----------------------------------------------------------- */
+.main-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ----------------------------------------------------------- */
+/* ✅ ステータスカード */
+/* ----------------------------------------------------------- */
+.status-card {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 0.7fr 0.7fr;
+  gap: 0.8rem;
+}
+
+.status-item {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid var(--line-soft);
+}
+
+.status-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text-sub);
+  font-size: 0.72rem;
+}
+
+.status-value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.86rem;
+}
+
+/* ----------------------------------------------------------- */
+/* ✅ ログパネル */
+/* ----------------------------------------------------------- */
+.log-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  border-radius: 1.35rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.95), rgba(2, 6, 23, 0.98));
+  box-shadow: var(--shadow);
+}
+
+.log-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.log-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.log-title-row h2 {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.16em;
+  color: #d1fae5;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.live-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--green);
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.9);
+}
+
+.log-help-text {
+  margin: 0;
+  color: var(--text-sub);
+  font-size: 0.74rem;
+}
+
+/* ----------------------------------------------------------- */
+/* ✅ ログ本文 */
+/* ----------------------------------------------------------- */
+.log-output {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 1rem 1.1rem;
+  overflow: auto;
+  /* ログをページ全体ではなく、この枠の中でスクロールさせる。 */
+  height: 65vh;
+  max-height: 65vh;
+  /* 初回の最下部への移動が完了してから、ログ本文を表示する。 */
+  visibility: hidden;
+
+  background:
+    linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0, transparent 1px),
+    #020617;
+  background-size: 4rem 4rem, 100% 2rem, auto;
+
+  color: #e5e7eb;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.86rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+
+  /* ⭐ スクロールバーで右側がガタつくのを防ぐ */
+  scrollbar-gutter: stable;
+}
+
+.log-output::selection {
+  background: rgba(34, 197, 94, 0.35);
+}
+
+/* ----------------------------------------------------------- */
+/* ✅ スクロールバー */
+/* ----------------------------------------------------------- */
+.log-output::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.log-output::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+.log-output::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 999px;
+  border: 3px solid #020617;
+}
+
+.log-output::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ----------------------------------------------------------- */
+/* ✅ 画面幅が狭いとき */
+/* ----------------------------------------------------------- */
+@media (max-width: 900px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .status-card {
+    grid-template-columns: 1fr;
+  }
+
+  .log-panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* ----------------------------------------------------------- */
+/* ✅ ERRORログの強調表示 */
+/* ----------------------------------------------------------- */
+.log-line {
+  display: block;
+  min-height: 1.65em;
+}
+
+.log-line.is-error {
+  color: #fecaca;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.28), rgba(239, 68, 68, 0.08), transparent);
+  border-left: 4px solid #ef4444;
+  padding-left: 0.6rem;
+  margin: 0.08rem 0;
+  border-radius: 0.35rem;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
+}
+
+/* ✅ nodemonの起動通知を、ターミナルと同様に緑色で表示する。 */
+.log-line.is-starting {
+  color: #22c55e;
+}
+
+/* ✅ nodemonのバージョン・操作案内・監視設定を黄色で表示する。 */
+.log-line.is-nodemon-info {
+  color: #ffff00;
+}
+
+/* 🕒 日時とIP欄は、どの種類のログでも同じ水色で表示する。 */
+.log-date {
+  color: #7dd3fc;
+}
+
+.log-ip {
+  color: #7dd3fc;
+}
+
+/* IP不明欄・通常のconsoleログのIPは、日時と同じ水色にする。 */
+.log-ip.is-unknown {
+  color: #7dd3fc;
+}

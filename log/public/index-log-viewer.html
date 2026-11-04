@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Log Viewer</title>
+  <link rel="stylesheet" href="ress.min.css">
+  <link rel="stylesheet" href="log-style.css">
+  <link rel="icon" href="./images/planet-earth.png">
+</head>
+<body>
+  <!-- ----------------------------------------------------------- -->
+  <!-- ✅ ページ全体 -->
+  <!-- ----------------------------------------------------------- -->
+  <div class="page-shell">
+
+    <!-- ----------------------------------------------------------- -->
+    <!-- ✅ ヘッダー -->
+    <!-- ----------------------------------------------------------- -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="app-mark">LOG</div>
+        <div>
+          <h1 class="app-title">Server Log Viewer</h1>
+          <p class="app-subtitle">server-app.log リアルタイム監視</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div id="connection-status" class="connection-status is-waiting">
+          接続準備中
+        </div>
+      </div>
+    </header>
+
+    <!-- ----------------------------------------------------------- -->
+    <!-- ✅ メイン -->
+    <!-- ----------------------------------------------------------- -->
+    <main class="main-area">
+
+      <!-- ✅ ログ情報カード -->
+      <section class="status-card">
+        <div class="status-item">
+          <span class="status-label">監視ファイル</span>
+          <span id="log-file-path" class="status-value">読み込み中...</span>
+        </div>
+
+        <div class="status-item">
+          <span class="status-label">最終更新</span>
+          <span id="last-updated" class="status-value">---</span>
+        </div>
+
+        <div class="status-item">
+          <span class="status-label">表示行数</span>
+          <span id="log-line-count" class="status-value">0 行</span>
+        </div>
+
+        <div class="status-item">
+          <span class="status-label">ログ容量</span>
+          <span id="log-file-size" class="status-value">---</span>
+        </div>
+      </section>
+
+      <!-- ✅ ログ表示本体 -->
+      <section class="log-panel">
+        <div class="log-panel-header">
+          <div class="log-title-row">
+            <span class="live-dot"></span>
+            <h2>LIVE SERVER LOG</h2>
+          </div>
+
+          <p class="log-help-text">
+            最新のログは一番下に表示されます。最下部では自動で追従します
+          </p>
+        </div>
+
+        <!--
+          ✅ ログ本文
+          preタグを使う理由：
+          ・改行をそのまま表示できる
+          ・空白も崩れにくい
+          ・ログ表示に向いている
+        -->
+        <pre id="log-output" class="log-output">ログ読み込み中...</pre>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="fr-server-log-viewer.js"></script>
+</body>
+</html>
