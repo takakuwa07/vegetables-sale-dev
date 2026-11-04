@@ -228,41 +228,55 @@ Get-Content -LiteralPath .\log\gateway.log -Tail 50 -Wait
 
 ```text
 プロジェクト/
-├─ server.js                  # アプリの起動・停止
-├─ package.json               # 依存パッケージと実行コマンド
-├─ package-lock.json          # 依存パッケージの固定情報
-├─ runtime.json               # 開発・本番の環境種別
-├─ .env.development           # 開発用の接続情報・ポート等
-├─ .env.example               # 開発envのひな形
-├─ .env.production.example    # 本番envのひな形
-├─ config/                    # アプリ名・環境・DB名・ポート等の設定
-│  └─ application.json        # アプリ固有設定の入口
-├─ backend/                   # 一覧API・データ取得処理
-│  └─ queries/                # 一覧取得・件数・列定義のSQL
-├─ db/                        # DB接続とSQL読込の共通処理
-│  └─ queries/                # 接続先台帳等を読むSQL
-├─ middleware/                # 画面配信・ログ・エラー等の共通処理
-├─ public/                    # アプリ画面のHTML・CSS・JavaScript
-│  └─ shared/                 # 同梱する共通CSS
-├─ log/                       # ログ閲覧機能と開発ログの保存先
-│  ├─ server-log.js           # ログ閲覧サーバーの起動
-│  ├─ backend/                # ログ取得・SSE配信のAPI
-│  └─ public/                 # ログ画面のHTML・CSS・JavaScript
-├─ scripts/                   # 開発・検査・デプロイ・切り戻しの処理
-├─ database-setup/            # DB初期構築専用。デプロイ対象外
-│  ├─ templates/              # SQL生成元。変更するときはここを編集
-│  └─ internal/               # 表定義を確認する読取専用SQL
-├─ tests/                     # 自動テスト
-│  └─ fixtures/               # テスト用SQL
-├─ .github/                   # GitHub Copilot向けの必須ルール
-│  ├─ copilot-instructions.md # 全アプリ共通ルール
-│  └─ instructions/           # このアプリ固有ルール
+│
+├─ server.js                  # 🚀 アプリの起動・停止
+├─ package.json               # 📦 依存パッケージと実行コマンド
+├─ package-lock.json          # 🔒 依存パッケージの固定情報
+├─ runtime.json               # 🔀 開発・本番の環境種別
+│
+├─ .env.development           # 🔑 開発用の接続情報・ポート等
+├─ .env.example               # 📝 開発envのひな形
+├─ .env.production.example    # 📝 本番envのひな形
+│
+├─ config/                    # ⚙️ アプリ名・環境・DB名・ポート等の設定
+│  └─ application.json        # 🏷️ アプリ固有設定の入口
+│
+├─ backend/                   # 📡 一覧API・データ取得処理
+│  └─ queries/                # 🗄️ 一覧取得・件数・列定義のSQL
+│
+├─ db/                        # 🔌 DB接続とSQL読込の共通処理
+│  └─ queries/                # 🗄️ 接続先台帳等を読むSQL
+│
+├─ middleware/                # 🧩 画面配信・ログ・エラー等の共通処理
+│
+├─ public/                    # 🖥️ アプリ画面のHTML・CSS・JavaScript
+│  └─ shared/                 # 🎨 同梱する共通CSS
+│
+├─ log/                       # 📜 ログ閲覧機能と開発ログの保存先
+│  ├─ server-log.js           # 🚀 ログ閲覧サーバーの起動
+│  ├─ backend/                # 📡 ログ取得・SSE配信のAPI
+│  └─ public/                 # 🖥️ ログ画面のHTML・CSS・JavaScript
+│
+├─ scripts/                   # 🛠️ 開発・検査・デプロイ・切り戻しの処理
+│
+├─ database-setup/            # 🧱 DB初期構築専用。デプロイ対象外
+│  ├─ templates/              # 📝 SQL生成元。変更するときはここを編集
+│  └─ internal/               # 🔎 表定義を確認する読取専用SQL
+│
+├─ tests/                     # ✅ 自動テスト
+│  └─ fixtures/               # 🧪 テスト用SQL
+│
+├─ .github/                   # 🤖 GitHub Copilot向けの必須ルール
+│  ├─ copilot-instructions.md # 🌍 全アプリ共通ルール
+│  └─ instructions/           # 📍 このアプリ固有ルール
+│
 ├─ docs/
-│  ├─ human/                  # 人向けの詳細例・調査手順
-│  └─ ai/                     # AI向けの文書索引
-├─ AGENTS.md                  # 対応AIが読む入口
-├─ initial-setup.md           # 初回だけ使う手順書
-└─ README.md                  # 普段使うマニュアル
+│  ├─ human/                  # 📖 人向けの詳細例・調査手順
+│  └─ ai/                     # 🤖 AI向けの文書索引
+│
+├─ AGENTS.md                  # 🤖 対応AIが読む入口
+├─ initial-setup.md           # 🏁 初回だけ使う手順書
+└─ README.md                  # 📚 普段使うマニュアル
 ```
 
 主なファイルを抜粋しています。`node_modules/` は `npm ci` で準備します。
